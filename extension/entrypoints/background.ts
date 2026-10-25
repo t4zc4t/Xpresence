@@ -1,6 +1,6 @@
 import { browser, type Browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
-import { buildActivity, sameActivity, shouldHide, type Activity } from '@/lib/activity';
+import { basicActivity, buildActivity, sameActivity, shouldHide, type Activity } from '@/lib/activity';
 import { BRIDGE_HOST, DISCORD_CLIENT_ID } from '@/lib/config';
 import { getSettings, type Settings } from '@/lib/settings';
 import { SITES } from '@/lib/sites';
@@ -29,6 +29,8 @@ export default defineBackground(() => {
   let user: string | undefined;
   let bridgeError: string | undefined;
 
+  // set once Discord rejects the newer fields (site name, links), then we send the plain card
+  let basic = false;
   let sent: Activity | null = null;
   let sentAt = 0;
   let wanted: Activity | null = null;
@@ -82,6 +84,12 @@ export default defineBackground(() => {
       discord = msg.discord === 'connected' ? 'connected' : 'offline';
       user = msg.user ?? undefined;
       bridgeError = msg.error ?? undefined;
+      if (!basic && /rejected/i.test(bridgeError ?? '') && sent) {
+        basic = true;
+        sent = null;
+        sentAt = 0;
+        push();
+      }
       publish();
     });
 
@@ -143,7 +151,7 @@ export default defineBackground(() => {
 
     const p = openPort();
     if (!p) return;
-    p.postMessage({ type: 'set', activity: wanted });
+    p.postMessage({ type: 'set', activity: basic ? basicActivity(wanted) : wanted });
     sent = wanted;
     sentAt = Date.now();
   };

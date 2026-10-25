@@ -1,6 +1,6 @@
 // Turns what a tab is playing into a Discord activity payload.
 
-import { siteById } from './sites';
+import { siteById, siteLogo } from './sites';
 import { isBlocked, type Settings } from './settings';
 import type { Media } from './types';
 
@@ -9,12 +9,21 @@ const WATCHING = 3;
 const SHOW_DETAILS = 2;
 
 export interface Activity {
+  // shown as "Watching <name>" instead of the app name
+  name?: string;
   type: number;
   status_display_type: number;
   details: string;
+  details_url?: string;
   state?: string;
   timestamps?: { start?: number; end?: number };
-  assets?: { large_image?: string; large_text?: string; small_image?: string; small_text?: string };
+  assets?: {
+    large_image?: string;
+    large_text?: string;
+    large_url?: string;
+    small_image?: string;
+    small_text?: string;
+  };
   buttons?: { label: string; url: string }[];
 }
 
@@ -45,10 +54,11 @@ export function shouldHide(m: Media, settings: Settings): boolean {
 export function buildActivity(m: Media, settings: Settings, now = Date.now()): Activity {
   const site = siteById(m.site);
   const siteName = site?.name ?? 'the web';
-  const icon = https(m.siteIcon);
+  const icon = https(m.siteIcon) ?? (site ? siteLogo(site) : undefined);
 
   if (shouldHide(m, settings)) {
     return {
+      name: siteName,
       type: WATCHING,
       status_display_type: SHOW_DETAILS,
       details: siteName,
@@ -62,10 +72,13 @@ export function buildActivity(m: Media, settings: Settings, now = Date.now()): A
   else state = episodeLine(m);
   if (!m.playing) state = state ? `Paused · ${state}` : 'Paused';
 
+  const url = https(m.url);
   const a: Activity = {
+    name: siteName,
     type: WATCHING,
     status_display_type: SHOW_DETAILS,
     details: fit(m.title) ?? siteName,
+    details_url: url,
     state: fit(state),
   };
 
@@ -82,12 +95,12 @@ export function buildActivity(m: Media, settings: Settings, now = Date.now()): A
     a.assets = {
       large_image: large,
       large_text: fit(poster ? m.title : siteName),
+      large_url: url,
       small_image: poster && icon ? icon : undefined,
       small_text: poster && icon ? siteName : undefined,
     };
   }
 
-  const url = https(m.url);
   if (settings.buttons && url && url.length <= 512) {
     a.buttons = [{ label: fit(`Watch on ${siteName}`, 32)!, url }];
   }
@@ -103,4 +116,14 @@ export function sameActivity(a: Activity | null, b: Activity | null, slackMs = 4
   if (JSON.stringify(ra) !== JSON.stringify(rb)) return false;
   if (!ta || !tb) return !ta && !tb;
   return Math.abs((ta.start ?? 0) - (tb.start ?? 0)) < slackMs && Math.abs((ta.end ?? 0) - (tb.end ?? 0)) < slackMs;
+}
+
+// the plain version for Discord builds that reject the newer fields
+export function basicActivity(a: Activity): Activity {
+  const { name: _n, details_url: _d, ...rest } = a;
+  if (rest.assets) {
+    const { large_url: _l, ...assets } = rest.assets;
+    rest.assets = assets;
+  }
+  return rest;
 }

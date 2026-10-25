@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildActivity, sameActivity } from './activity';
+import { basicActivity, buildActivity, sameActivity } from './activity';
 import { cleanTitle, seasonEpisode } from './page';
 import { DEFAULTS, merge } from './settings';
 import type { Media } from './types';
@@ -24,6 +24,8 @@ describe('buildActivity', () => {
   it('builds a watching card with progress', () => {
     const a = buildActivity(show, settings, 1_000_000);
     expect(a.type).toBe(3);
+    expect(a.name).toBe('Netflix');
+    expect(a.details_url).toBe(show.url);
     expect(a.details).toBe('Severance');
     expect(a.state).toBe('S2 · E5 · Who Is Alive?');
     expect(a.timestamps).toEqual({ start: 940_000, end: 3_940_000 });
@@ -57,8 +59,17 @@ describe('buildActivity', () => {
 
   it('ignores non https images and links', () => {
     const a = buildActivity({ ...show, poster: 'http://x.test/a.jpg', siteIcon: undefined, url: 'javascript:alert(1)' }, settings);
-    expect(a.assets).toBeUndefined();
+    expect(a.assets?.large_image).toContain('favicons?domain=netflix.com');
+    expect(a.details_url).toBeUndefined();
     expect(a.buttons).toBeUndefined();
+  });
+
+  it('can drop the newer fields', () => {
+    const a = basicActivity(buildActivity({ ...show, poster: 'https://x.test/p.jpg' }, settings));
+    expect(a.name).toBeUndefined();
+    expect(a.details_url).toBeUndefined();
+    expect(a.assets?.large_url).toBeUndefined();
+    expect(a.assets?.large_image).toBe('https://x.test/p.jpg');
   });
 });
 
