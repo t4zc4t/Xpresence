@@ -1,5 +1,5 @@
 // Discord application the activity is shown under (application IDs are public)
-export const DISCORD_CLIENT_ID = '';
+export const DISCORD_CLIENT_ID = '1563761482485735455';
 
 // must match HOST_NAME in the bridge
 export const BRIDGE_HOST = 'com.xpresence.bridge';
