@@ -1,4 +1,6 @@
-export type SiteId = 'netflix' | 'appletv' | 'youtube' | 'primevideo' | 'hotstar';
+import { BUILTIN_SITES } from './builtin-sites';
+
+export type SiteId = string;
 
 export interface Site {
   id: SiteId;
@@ -9,45 +11,23 @@ export interface Site {
   domain: string;
 }
 
-export const SITES: Site[] = [
-  {
-    id: 'netflix',
-    domain: 'netflix.com',
-    name: 'Netflix',
-    matches: ['https://www.netflix.com/*'],
-    host: /(^|\.)netflix\.com$/,
-  },
-  {
-    id: 'appletv',
-    domain: 'tv.apple.com',
-    name: 'Apple TV',
-    matches: ['https://tv.apple.com/*'],
-    host: /^tv\.apple\.com$/,
-  },
-  {
-    id: 'youtube',
-    domain: 'youtube.com',
-    name: 'YouTube',
-    matches: ['https://www.youtube.com/*', 'https://m.youtube.com/*'],
-    host: /^(www|m)\.youtube\.com$/,
-  },
-  {
-    id: 'primevideo',
-    domain: 'primevideo.com',
-    name: 'Prime Video',
-    matches: ['https://www.primevideo.com/*'],
-    host: /(^|\.)primevideo\.com$/,
-  },
-  {
-    id: 'hotstar',
-    domain: 'hotstar.com',
-    name: 'JioHotstar',
-    matches: ['https://www.hotstar.com/*', 'https://www.jiohotstar.com/*'],
-    host: /(^|\.)(jio)?hotstar\.com$/,
-  },
-];
+// sites kept only on this machine, in extension/local (never committed)
+interface LocalSite {
+  id: string;
+  name: string;
+  domain: string;
+  matches: string[];
+}
 
-export const ALL_MATCHES = SITES.flatMap((s) => s.matches);
+const local = import.meta.glob<LocalSite>('../local/*/site.json', { eager: true, import: 'default' });
+
+export const SITES: Site[] = [
+  ...BUILTIN_SITES,
+  ...Object.values(local).map((s) => ({
+    ...s,
+    host: new RegExp(`(^|\\.)${s.domain.replace(/\./g, '\\.')}$`),
+  })),
+];
 
 export function siteById(id: string): Site | undefined {
   return SITES.find((s) => s.id === id);

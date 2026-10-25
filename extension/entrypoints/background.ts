@@ -2,7 +2,7 @@ import { browser, type Browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
 import { basicActivity, buildActivity, sameActivity, shouldHide, type Activity } from '@/lib/activity';
 import { BRIDGE_HOST, DISCORD_CLIENT_ID } from '@/lib/config';
-import { getSettings, type Settings } from '@/lib/settings';
+import { getSettings, siteConf, type Settings } from '@/lib/settings';
 import { SITES } from '@/lib/sites';
 import type { BridgeState, ContentMessage, Media, Status } from '@/lib/types';
 
@@ -182,7 +182,7 @@ export default defineBackground(() => {
 
     if (!s.enabled) reason = 'Sharing is switched off';
     else if (s.snoozeUntil > now) reason = 'snoozed';
-    else if (!SITES.some((site) => s.sites[site.id].on)) reason = 'No sites switched on yet';
+    else if (!SITES.some((site) => siteConf(s, site.id).on)) reason = 'No sites switched on yet';
     else {
       const chosen = await pick(s);
       if (chosen) {
@@ -216,7 +216,7 @@ export default defineBackground(() => {
     for (const site of SITES) {
       const id = scriptId(site.id);
       const allowed = await browser.permissions.contains({ origins: site.matches });
-      const want = s.sites[site.id].on && allowed;
+      const want = siteConf(s, site.id).on && allowed;
 
       if (want && !registered.has(id)) {
         await browser.scripting.registerContentScripts([

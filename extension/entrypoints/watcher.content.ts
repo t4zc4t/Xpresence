@@ -20,6 +20,7 @@ export default defineContentScript({
     const site = siteForHost(location.hostname);
     if (!site) return;
     const adapter = ADAPTERS[site.id];
+    if (!adapter) return;
 
     let last: Media | null = null;
     let lastKey = '';

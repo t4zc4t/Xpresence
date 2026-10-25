@@ -3,7 +3,7 @@ import './style.css';
 import { browser } from 'wxt/browser';
 import { episodeLine } from '@/lib/activity';
 import { RELEASES_URL } from '@/lib/config';
-import { getSettings, saveSettings, type Settings } from '@/lib/settings';
+import { getSettings, saveSettings, siteConf, type Settings } from '@/lib/settings';
 import { SITES, siteById } from '@/lib/sites';
 import type { Status } from '@/lib/types';
 
@@ -52,7 +52,7 @@ function renderNow() {
     } else if (!settings.enabled) {
       head = 'Sharing is off';
       body = ['Turn on the switch above to share again.'];
-    } else if (!SITES.some((s) => settings.sites[s.id].on)) {
+    } else if (!SITES.some((s) => siteConf(settings, s.id).on)) {
       head = 'Pick your sites';
       body = ['Switch on the sites you want to share below.'];
     }
@@ -174,7 +174,7 @@ function renderSites() {
   list.replaceChildren();
 
   for (const site of SITES) {
-    const conf = settings.sites[site.id];
+    const conf = siteConf(settings, site.id);
 
     const hide = el('button', {
       className: 'hide',
@@ -183,18 +183,21 @@ function renderSites() {
     });
     hide.setAttribute('aria-pressed', String(conf.hideTitle));
     hide.hidden = !conf.on;
-    hide.onclick = () => update((s) => (s.sites[site.id].hideTitle = !s.sites[site.id].hideTitle));
+    hide.onclick = () => update((s) => {
+      const c = siteConf(s, site.id);
+      c.hideTitle = !c.hideTitle;
+    });
 
     const input = el('input', { type: 'checkbox', checked: conf.on });
     input.setAttribute('aria-label', `Share ${site.name}`);
     input.onchange = () => {
       if (!input.checked) {
-        void update((s) => (s.sites[site.id].on = false));
+        void update((s) => (siteConf(s, site.id).on = false));
         return;
       }
       // must be called straight from the click for the browser to allow it
       browser.permissions.request({ origins: site.matches }).then((ok) => {
-        if (ok) void update((s) => (s.sites[site.id].on = true));
+        if (ok) void update((s) => (siteConf(s, site.id).on = true));
         else input.checked = false;
       });
     };

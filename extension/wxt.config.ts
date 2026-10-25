@@ -1,5 +1,16 @@
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { defineConfig } from 'wxt';
-import { ALL_MATCHES } from './lib/sites';
+import { BUILTIN_SITES } from './lib/builtin-sites';
+
+// sites kept only on this machine also need their permissions in the manifest
+function localMatches(): string[] {
+  if (!existsSync('local')) return [];
+  return readdirSync('local', { withFileTypes: true })
+    .filter((d) => d.isDirectory() && existsSync(`local/${d.name}/site.json`))
+    .flatMap((d) => JSON.parse(readFileSync(`local/${d.name}/site.json`, 'utf8')).matches as string[]);
+}
+
+const ALL_MATCHES = [...BUILTIN_SITES.flatMap((s) => s.matches), ...localMatches()];
 
 export default defineConfig({
   imports: false,

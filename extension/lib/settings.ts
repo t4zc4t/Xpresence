@@ -34,9 +34,13 @@ export function merge(saved: Partial<Settings> | undefined): Settings {
   const s = saved ?? {};
   const sites = { ...DEFAULTS.sites };
   for (const site of SITES) {
-    sites[site.id] = { ...DEFAULTS.sites[site.id], ...s.sites?.[site.id] };
+    sites[site.id] = { on: false, hideTitle: false, ...s.sites?.[site.id] };
   }
   return { ...DEFAULTS, ...s, sites };
+}
+
+export function siteConf(s: Settings, id: SiteId): SiteSettings {
+  return (s.sites[id] ??= { on: false, hideTitle: false });
 }
 
 export async function getSettings(): Promise<Settings> {

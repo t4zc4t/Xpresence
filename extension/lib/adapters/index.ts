@@ -15,10 +15,14 @@ export type Reading = Partial<Pick<Media, 'kind' | 'title' | 'subtitle' | 'seaso
 // null means the page isn't a player (browse pages, search and so on)
 export type Adapter = () => Reading | null;
 
+// adapters for sites kept only on this machine
+const local = import.meta.glob<{ id: string; adapter: Adapter }>('../../local/*/adapter.ts', { eager: true });
+
 export const ADAPTERS: Record<SiteId, Adapter> = {
   netflix,
   appletv,
   youtube,
   primevideo,
   hotstar,
+  ...Object.fromEntries(Object.values(local).map((m) => [m.id, m.adapter])),
 };
