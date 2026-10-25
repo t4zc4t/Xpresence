@@ -38,4 +38,15 @@ export type ContentMessage =
   | { type: 'gone' };
 
 // from the popup and setup page
-export type UiMessage = { type: 'probe' } | { type: 'removeBridge' } | { type: 'hideTitle'; title: string };
+export type UiMessage =
+  | { type: 'probe' }
+  | { type: 'removeBridge' }
+  | { type: 'hideTitle'; title: string }
+  | { type: 'checkUpdate' };
+
+// newest release on GitHub, checked once a day
+export interface UpdateInfo {
+  latest?: string;
+  url?: string;
+  checkedAt: number;
+}

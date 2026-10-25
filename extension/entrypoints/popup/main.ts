@@ -2,10 +2,10 @@ import '@/assets/ui.css';
 import './style.css';
 import { browser } from 'wxt/browser';
 import { episodeLine } from '@/lib/activity';
-import { BRIDGE_VERSION, bridgeDownload, olderThan } from '@/lib/config';
+import { BRIDGE_VERSION, RELEASES_URL, bridgeDownload, olderThan } from '@/lib/config';
 import { getSettings, saveSettings, siteConf, type Settings } from '@/lib/settings';
 import { SITES, siteById } from '@/lib/sites';
-import type { Status, UiMessage } from '@/lib/types';
+import type { Status, UiMessage, UpdateInfo } from '@/lib/types';
 import { bg, cat, clock, el, siteTiles } from '@/lib/ui';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -14,6 +14,9 @@ const send = (msg: UiMessage) => browser.runtime.sendMessage(msg).catch(() => {}
 let settings: Settings;
 let status: Status | undefined;
 let tab: 'now' | 'sites' | 'settings' = 'now';
+let release: UpdateInfo | undefined;
+const VERSION = browser.runtime.getManifest().version;
+const hasUpdate = () => !!release?.latest && olderThan(VERSION, release.latest);
 
 const snoozed = () => settings.snoozeUntil > Date.now();
 const timeOf = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -219,11 +222,21 @@ function healthLine(): HTMLElement | null {
   return box;
 }
 
+function updateBanner(): HTMLElement | null {
+  if (!hasUpdate()) return null;
+  return el(
+    'div',
+    { className: 'banner' },
+    el('span', {}, el('strong', { textContent: `Xpresence ${release!.latest} is out` }), el('small', { textContent: 'Download it, then reload Xpresence' })),
+    el('a', { className: 'btn primary', href: release!.url ?? RELEASES_URL, target: '_blank', textContent: 'Get it' }),
+  );
+}
+
 function renderNow() {
   const box = $('now');
   const card =
     status?.bridge === 'missing' ? setupCard() : status?.showing && settings.enabled ? mediaCard() : emptyCard();
-  box.replaceChildren(card, snoozeRow() ?? '', healthLine() ?? '');
+  box.replaceChildren(updateBanner() ?? '', card, snoozeRow() ?? '', healthLine() ?? '');
 }
 
 // --- sites tab ---
@@ -308,7 +321,24 @@ function renderSettings() {
         ? `Installed, version ${status?.version ?? '?'}`
         : 'Checking…';
 
+  const check = el('button', { className: 'btn', type: 'button', textContent: 'Check now' });
+  check.onclick = () => {
+    check.textContent = 'Checking…';
+    void send({ type: 'checkUpdate' });
+  };
+  const versionText = hasUpdate()
+    ? `Version ${VERSION}, ${release!.latest} is available`
+    : release?.latest
+      ? `Version ${VERSION}, up to date`
+      : `Version ${VERSION}`;
+
   box.replaceChildren(
+    el(
+      'div',
+      { className: 'set' },
+      el('span', {}, 'Xpresence', el('small', { textContent: versionText })),
+      hasUpdate() ? el('a', { className: 'btn primary', href: release!.url ?? RELEASES_URL, target: '_blank', textContent: 'Get update' }) : check,
+    ),
     el(
       'label',
       { className: 'set' },
@@ -370,6 +400,7 @@ async function start() {
   $('cat').append(cat());
   settings = await getSettings();
   ({ status } = (await browser.storage.session.get('status')) as { status?: Status });
+  ({ update: release } = (await browser.storage.local.get('update')) as { update?: UpdateInfo });
   render();
 
   for (const t of ['now', 'sites', 'settings'] as const) $(`tab-${t}`).onclick = () => openTab(t);
@@ -397,6 +428,11 @@ async function start() {
         settings = s;
         render();
       });
+    }
+    if (area === 'local' && changes.update) {
+      release = changes.update.newValue as UpdateInfo | undefined;
+      renderNow();
+      renderSettings();
     }
   });
 

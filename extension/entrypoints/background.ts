@@ -1,10 +1,10 @@
 import { browser, type Browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
 import { basicActivity, buildActivity, sameActivity, shouldHide, type Activity } from '@/lib/activity';
-import { BRIDGE_HOST, DISCORD_CLIENT_ID } from '@/lib/config';
+import { BRIDGE_HOST, DISCORD_CLIENT_ID, LATEST_API } from '@/lib/config';
 import { getSettings, saveSettings, siteConf, type Settings } from '@/lib/settings';
 import { SITES } from '@/lib/sites';
-import type { BridgeState, ContentMessage, Media, Status, UiMessage } from '@/lib/types';
+import type { BridgeState, ContentMessage, Media, Status, UiMessage, UpdateInfo } from '@/lib/types';
 
 // a tab we haven't heard from in this long is treated as gone
 const STALE = 75_000;
@@ -188,6 +188,26 @@ export default defineBackground(() => {
     p.postMessage({ type: 'uninstall' });
   };
 
+  // --- updates ---
+
+  const DAY = 24 * 3_600_000;
+
+  // GitHub allows 60 unauthenticated calls an hour, once a day is nothing
+  const checkUpdate = async (force = false) => {
+    const { update } = (await browser.storage.local.get('update')) as { update?: UpdateInfo };
+    if (!force && update && Date.now() - update.checkedAt < DAY) return;
+    try {
+      const res = await fetch(LATEST_API, { headers: { Accept: 'application/vnd.github+json' } });
+      if (!res.ok) throw new Error(String(res.status));
+      const r = (await res.json()) as { tag_name?: string; html_url?: string };
+      const info: UpdateInfo = { latest: r.tag_name?.replace(/^v/, ''), url: r.html_url, checkedAt: Date.now() };
+      await browser.storage.local.set({ update: info });
+    } catch {
+      // try again in a few hours
+      await browser.storage.local.set({ update: { ...update, checkedAt: Date.now() - DAY + 4 * 3_600_000 } });
+    }
+  };
+
   // --- choosing what to show ---
 
   const pick = async (s: Settings): Promise<[number, TabState] | undefined> => {
@@ -279,6 +299,7 @@ export default defineBackground(() => {
   browser.runtime.onMessage.addListener((msg: ContentMessage | UiMessage, sender) => {
     if (msg.type === 'probe') return void probe();
     if (msg.type === 'removeBridge') return void removeBridge();
+    if (msg.type === 'checkUpdate') return void checkUpdate(true);
     if (msg.type === 'hideTitle') {
       const title = msg.title.trim();
       void saveSettings((s) => {
@@ -319,8 +340,10 @@ export default defineBackground(() => {
 
   // expire paused titles, snoozes and stale tabs
   browser.alarms.create('tick', { periodInMinutes: 0.5 });
+  browser.alarms.create('update', { periodInMinutes: 60 });
   browser.alarms.onAlarm.addListener((a) => {
     if (a.name === 'tick') scheduleDecide();
+    if (a.name === 'update') void checkUpdate();
   });
 
   // the popup asks for a fresh check when it opens
@@ -337,5 +360,6 @@ export default defineBackground(() => {
   browser.runtime.setUninstallURL('https://github.com/t4zc4t/Xpresence#removing-it').catch(() => {});
   browser.runtime.onStartup.addListener(() => void syncScripts());
   void syncScripts();
+  void checkUpdate();
   publish();
 });

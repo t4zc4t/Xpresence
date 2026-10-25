@@ -400,3 +400,31 @@ textarea {
 .bridge .actions {
   margin-top: 8px;
 }
+
+/* new version note */
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ok) 14%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--ok) 40%, var(--line));
+}
+
+.banner > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.banner strong {
+  display: block;
+  font-size: 13px;
+}
+
+.banner small {
+  color: var(--muted);
+  font-size: 12px;
+}

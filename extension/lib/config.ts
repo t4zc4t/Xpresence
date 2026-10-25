@@ -5,6 +5,7 @@ export const DISCORD_CLIENT_ID = '1563761482485735455';
 export const BRIDGE_HOST = 'com.xpresence.bridge';
 
 export const RELEASES_URL = 'https://github.com/t4zc4t/Xpresence/releases/latest';
+export const LATEST_API = 'https://api.github.com/repos/t4zc4t/Xpresence/releases/latest';
 
 // the bridge this build expects, older ones get an update prompt
 export const BRIDGE_VERSION = '0.2.0';
