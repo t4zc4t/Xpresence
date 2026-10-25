@@ -1,0 +1,425 @@
+:root {
+  --ink: #141a33;
+  --panel: #1c2445;
+  --line: #2b3560;
+  --text: #eceaf6;
+  --muted: #9097bb;
+  --onair: #ff4a3a;
+  --paused: #f2b544;
+  --ok: #5fd39a;
+  --radius: 14px;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--text);
+  font: 14px/1.45 'Bricolage Grotesque Variable', system-ui, sans-serif;
+  font-variation-settings: 'opsz' 14;
+}
+
+body {
+  width: 360px;
+  padding: 14px 16px 16px;
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-weight: 650;
+}
+
+h1 {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  font-variation-settings: 'opsz' 96;
+  flex: 1;
+}
+
+h2 {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 18px 0 6px;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* header with the tally lamp, the one loud thing on the page */
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tally {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #3a4166;
+  box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.25);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.tally.live {
+  background: var(--onair);
+  box-shadow: 0 0 0 4px rgb(255 74 58 / 0.18), 0 0 18px rgb(255 74 58 / 0.7);
+}
+
+.tally.paused {
+  background: var(--paused);
+  box-shadow: 0 0 0 4px rgb(242 181 68 / 0.15);
+}
+
+/* switches */
+
+.switch {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.switch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.switch .track {
+  width: 36px;
+  height: 21px;
+  border-radius: 21px;
+  background: var(--line);
+  position: relative;
+  transition: background 0.2s;
+}
+
+.switch .track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--text);
+  transition: transform 0.2s;
+}
+
+.switch.big .track {
+  width: 44px;
+  height: 25px;
+}
+
+.switch.big .track::after {
+  width: 19px;
+  height: 19px;
+}
+
+.switch input:checked + .track {
+  background: var(--onair);
+}
+
+.switch input:checked + .track::after {
+  transform: translateX(15px);
+}
+
+.switch.big input:checked + .track::after {
+  transform: translateX(19px);
+}
+
+.switch input:focus-visible + .track,
+button:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* the now playing card, laid out like the Discord one */
+
+.now {
+  margin-top: 14px;
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 12px;
+  min-height: 92px;
+}
+
+.card {
+  display: grid;
+  grid-template-columns: 68px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.art {
+  width: 68px;
+  height: 68px;
+  border-radius: 10px;
+  background: var(--line) center / cover no-repeat;
+  position: relative;
+}
+
+.art .badge {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid var(--panel);
+  background: var(--ink) center / cover no-repeat;
+}
+
+.card .where {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.card .title {
+  font-weight: 650;
+  font-size: 15px;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card .state {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.bar .fill {
+  height: 4px;
+  border-radius: 4px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.bar .fill span {
+  display: block;
+  height: 100%;
+  background: var(--text);
+}
+
+.watch {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 7px;
+  border-radius: 8px;
+  background: var(--line);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.empty {
+  color: var(--muted);
+  margin: 0;
+  padding: 8px 2px;
+}
+
+.empty strong {
+  display: block;
+  color: var(--text);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.empty a {
+  color: var(--text);
+}
+
+/* bridge and discord health */
+
+.health {
+  margin: 10px 2px 0;
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.health .dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background: var(--muted);
+  vertical-align: 1px;
+}
+
+.health .good .dot {
+  background: var(--ok);
+}
+
+.health .bad .dot {
+  background: var(--onair);
+}
+
+.health .fix {
+  flex-basis: 100%;
+  color: var(--text);
+}
+
+.health .fix a {
+  color: var(--text);
+}
+
+/* snooze */
+
+.snooze {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+button {
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--muted);
+}
+
+.snooze .note {
+  flex: 1;
+  align-self: center;
+  font-size: 12px;
+  color: var(--paused);
+}
+
+/* sites */
+
+.sites ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sites li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 2px;
+  border-top: 1px solid var(--line);
+}
+
+.sites li:first-child {
+  border-top: 0;
+}
+
+.sites .name {
+  flex: 1;
+}
+
+.sites .name.off {
+  color: var(--muted);
+}
+
+.hide {
+  font-size: 12px;
+  padding: 3px 10px;
+  color: var(--muted);
+}
+
+.hide[aria-pressed='true'] {
+  color: var(--ink);
+  background: var(--paused);
+  border-color: var(--paused);
+}
+
+/* more options */
+
+.more {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.more summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 2px;
+}
+
+.block {
+  display: grid;
+  gap: 4px;
+  padding: 8px 2px 0;
+}
+
+.block small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+select,
+textarea {
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px 8px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

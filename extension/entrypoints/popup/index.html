@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Xpresence</title>
+  </head>
+  <body>
+    <header class="top">
+      <span class="tally" id="tally" aria-hidden="true"></span>
+      <h1>Xpresence</h1>
+      <label class="switch big" title="Share on Discord">
+        <input type="checkbox" id="enabled" />
+        <span class="track"></span>
+        <span class="sr">Share on Discord</span>
+      </label>
+    </header>
+
+    <section class="now" id="now" aria-live="polite"></section>
+
+    <p class="health" id="health"></p>
+
+    <section class="snooze" id="snooze"></section>
+
+    <section class="sites">
+      <h2>Sites</h2>
+      <ul id="sites"></ul>
+    </section>
+
+    <details class="more">
+      <summary>More options</summary>
+      <label class="row">
+        <span>Show a "Watch on" button</span>
+        <span class="switch">
+          <input type="checkbox" id="buttons" />
+          <span class="track"></span>
+        </span>
+      </label>
+      <label class="row">
+        <span>Keep paused titles for</span>
+        <select id="paused">
+          <option value="0">No time</option>
+          <option value="2">2 minutes</option>
+          <option value="5">5 minutes</option>
+          <option value="15">15 minutes</option>
+        </select>
+      </label>
+      <label class="block">
+        <span>Private titles</span>
+        <small>One per line. These show as "Watching Netflix" with no name.</small>
+        <textarea id="blocklist" rows="3" spellcheck="false"></textarea>
+      </label>
+    </details>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
