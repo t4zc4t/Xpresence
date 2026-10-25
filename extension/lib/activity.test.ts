@@ -98,5 +98,6 @@ describe('page helpers', () => {
   it('cleans page titles', () => {
     expect(cleanTitle('Severance | Apple TV+', 'Apple TV\\+?')).toBe('Severance');
     expect(cleanTitle('Watch Panchayat - JioHotstar', 'JioHotstar')).toBe('Panchayat');
+    expect(cleanTitle('\u200eF1 Weekend Warm-Up - Watch Live - Apple TV', 'Watch Live', 'Apple TV\\+?')).toBe('F1 Weekend Warm-Up');
   });
 });

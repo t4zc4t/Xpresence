@@ -2,20 +2,32 @@ import { cleanTitle, cleanUrl, meta, mediaSession, seasonEpisode } from '../page
 import type { Adapter } from './index';
 
 export const appletv: Adapter = () => {
-  // the web player sits on top of the show page, so the page meta still describes it
+  // clips and trailers play in an overlay, so the page title can be anything,
+  // the player's own media session is the reliable source
   const session = mediaSession();
-  const pageTitle = cleanTitle(meta('og:title') ?? document.title, 'Apple TV\\+?');
+  let page = cleanTitle(meta('og:title') ?? document.title, 'Watch Live', 'Apple TV\\+?');
+  if (page && /^apple tv\+?$/i.test(page)) page = undefined;
 
-  // the session usually has the show as artist/album and the episode as title
+  // episodes come with the show as artist or album
   const show = session?.album ?? session?.artist;
-  const se = seasonEpisode(session?.title);
-  const episodePage = /\/episode\//.test(location.pathname) || !!se.episode || !!show;
+  if (session?.title && show) {
+    return {
+      kind: 'episode',
+      title: show,
+      subtitle: session.title,
+      ...seasonEpisode(session.title),
+      poster: session.artwork ?? meta('og:image'),
+      url: cleanUrl(),
+    };
+  }
 
+  const title = session?.title ?? page;
+  const movie = /\/movie\//.test(location.pathname);
   return {
-    kind: episodePage ? 'episode' : 'movie',
-    title: show ?? pageTitle ?? session?.title,
-    subtitle: show ? session?.title : undefined,
-    ...se,
+    kind: movie ? 'movie' : 'video',
+    title,
+    // e.g. the event a highlight belongs to
+    subtitle: page && page !== title ? page : undefined,
     poster: session?.artwork ?? meta('og:image'),
     url: cleanUrl(),
   };

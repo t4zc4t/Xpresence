@@ -72,7 +72,8 @@ export function seasonEpisode(t: string | undefined): { season?: number; episode
 // strip things like " | Netflix" or " - Apple TV" from page titles
 export function cleanTitle(t: string | undefined, ...brands: string[]): string | undefined {
   if (!t) return undefined;
-  let out = t;
+  // some sites put invisible direction marks in their titles
+  let out = t.replace(/[\u200e\u200f\u202a-\u202e]/g, '').trim();
   for (const b of brands) {
     out = out.replace(new RegExp(`\\s*[-|–—:]\\s*(watch\\s+)?${b}.*$`, 'i'), '');
     out = out.replace(new RegExp(`^${b}\\s*[-|–—:]\\s*`, 'i'), '');
