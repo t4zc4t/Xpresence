@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Set up Xpresence</title>
+  </head>
+  <body data-air="off">
+    <main>
+      <header>
+        <span id="cat"></span>
+        <h1>Xpresence</h1>
+        <p class="lede">Shows what you're watching on your Discord profile, and only what you allow.</p>
+      </header>
+
+      <ol class="steps">
+        <li id="step-helper">
+          <div class="head">
+            <h2>Get the helper app</h2>
+            <span class="tick" aria-hidden="true"></span>
+          </div>
+          <p>Browsers can't talk to Discord directly, so a tiny helper does it. It only runs while something plays and needs no installer, just open it once.</p>
+          <div class="actions" id="downloads"></div>
+          <p class="note" id="helper-note"></p>
+        </li>
+        <li id="step-discord">
+          <div class="head">
+            <h2>Open Discord</h2>
+            <span class="tick" aria-hidden="true"></span>
+          </div>
+          <p>Use the Discord desktop app, the web version can't show activities from other apps.</p>
+          <p class="note" id="discord-note"></p>
+        </li>
+        <li id="step-sites">
+          <div class="head">
+            <h2>Choose your sites</h2>
+            <span class="tick" aria-hidden="true"></span>
+          </div>
+          <p>Nothing is shared until you switch a site on. The eye on a tile hides titles for that site.</p>
+          <div id="tiles"></div>
+        </li>
+      </ol>
+
+      <p class="done" id="done" hidden>You're all set. Play something and look at your Discord profile.</p>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

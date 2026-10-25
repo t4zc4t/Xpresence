@@ -2,9 +2,9 @@ import { browser, type Browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
 import { basicActivity, buildActivity, sameActivity, shouldHide, type Activity } from '@/lib/activity';
 import { BRIDGE_HOST, DISCORD_CLIENT_ID } from '@/lib/config';
-import { getSettings, siteConf, type Settings } from '@/lib/settings';
+import { getSettings, saveSettings, siteConf, type Settings } from '@/lib/settings';
 import { SITES } from '@/lib/sites';
-import type { BridgeState, ContentMessage, Media, Status } from '@/lib/types';
+import type { BridgeState, ContentMessage, Media, Status, UiMessage } from '@/lib/types';
 
 // a tab we haven't heard from in this long is treated as gone
 const STALE = 75_000;
@@ -28,6 +28,7 @@ export default defineBackground(() => {
   let discord: Status['discord'] = 'unknown';
   let user: string | undefined;
   let bridgeError: string | undefined;
+  let version: string | undefined;
 
   // set once Discord rejects the newer fields (site name, links), then we send the plain card
   let basic = false;
@@ -50,6 +51,7 @@ export default defineBackground(() => {
       discord,
       user,
       error: bridgeError,
+      version,
       showing,
       reason,
       updatedAt: Date.now(),
@@ -79,7 +81,19 @@ export default defineBackground(() => {
     bridgeError = undefined;
 
     port.onMessage.addListener((msg: any) => {
+      if (msg?.type === 'removed') {
+        port = null;
+        sent = null;
+        bridge = 'missing';
+        discord = 'unknown';
+        user = undefined;
+        version = undefined;
+        bridgeError = msg.ok ? undefined : `Could not remove the bridge: ${msg.error}`;
+        publish();
+        return;
+      }
       if (msg?.type !== 'status') return;
+      version = msg.version ?? undefined;
       bridge = 'connected';
       discord = msg.discord === 'connected' ? 'connected' : 'offline';
       user = msg.user ?? undefined;
@@ -99,7 +113,9 @@ export default defineBackground(() => {
       sent = null;
       discord = 'unknown';
       user = undefined;
-      if (/not found|forbidden|no such native/i.test(err)) {
+      if (bridge === 'missing') {
+        // already handled, e.g. right after removing it
+      } else if (/not found|forbidden|no such native/i.test(err)) {
         bridge = 'missing';
         bridgeError = 'The Xpresence bridge is not installed';
       } else {
@@ -109,7 +125,7 @@ export default defineBackground(() => {
       publish();
       // try again later if there's still something to show
       clearTimeout(retryTimer);
-      retryTimer = setTimeout(() => wanted && push(), RETRY);
+      retryTimer = setTimeout(() => wanted && push(), bridge === 'missing' ? RETRY * 4 : RETRY);
     });
 
     port.postMessage({ type: 'hello', clientId: DISCORD_CLIENT_ID });
@@ -154,6 +170,22 @@ export default defineBackground(() => {
     p.postMessage({ type: 'set', activity: basic ? basicActivity(wanted) : wanted });
     sent = wanted;
     sentAt = Date.now();
+  };
+
+  // open the bridge just to see if it's there, it closes again when idle
+  const probe = () => {
+    const p = openPort();
+    if (p) p.postMessage({ type: 'ping' });
+    if (!wanted) {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(closePort, IDLE_CLOSE);
+    }
+  };
+
+  const removeBridge = () => {
+    const p = openPort();
+    if (!p) return;
+    p.postMessage({ type: 'uninstall' });
   };
 
   // --- choosing what to show ---
@@ -244,7 +276,17 @@ export default defineBackground(() => {
 
   // --- events ---
 
-  browser.runtime.onMessage.addListener((msg: ContentMessage, sender) => {
+  browser.runtime.onMessage.addListener((msg: ContentMessage | UiMessage, sender) => {
+    if (msg.type === 'probe') return void probe();
+    if (msg.type === 'removeBridge') return void removeBridge();
+    if (msg.type === 'hideTitle') {
+      const title = msg.title.trim();
+      void saveSettings((s) => {
+        if (title && !s.blocklist.includes(title)) s.blocklist.push(title);
+      });
+      return;
+    }
+
     const tab = sender.tab;
     if (!tab?.id || tab.incognito) return;
 
@@ -284,11 +326,15 @@ export default defineBackground(() => {
   // the popup asks for a fresh check when it opens
   browser.runtime.onConnect.addListener((p) => {
     if (p.name !== 'popup') return;
-    if (port) port.postMessage({ type: 'ping' });
+    probe();
     scheduleDecide();
   });
 
-  browser.runtime.onInstalled.addListener(() => void syncScripts());
+  browser.runtime.onInstalled.addListener((d) => {
+    void syncScripts();
+    if (d.reason === 'install') void browser.tabs.create({ url: browser.runtime.getURL('/welcome.html') });
+  });
+  browser.runtime.setUninstallURL('https://github.com/t4zc4t/Xpresence#removing-it').catch(() => {});
   browser.runtime.onStartup.addListener(() => void syncScripts());
   void syncScripts();
   publish();

@@ -1,0 +1,122 @@
+body {
+  min-height: 100vh;
+}
+
+main {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 56px 20px 64px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+#cat .cat {
+  width: 104px;
+  height: 104px;
+  margin: 0 auto 14px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variation-settings: 'opsz' 96;
+}
+
+.lede {
+  margin: 8px auto 0;
+  max-width: 400px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: step;
+  display: grid;
+  gap: 12px;
+}
+
+.steps li {
+  counter-increment: step;
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px 20px 18px 64px;
+}
+
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 20px;
+  top: 18px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+  background: var(--raise);
+}
+
+.steps li[data-ok='true'] {
+  border-color: color-mix(in srgb, var(--ok) 45%, var(--line));
+}
+
+.steps li[data-ok='true']::before {
+  content: '✓';
+  background: var(--ok);
+  color: var(--ink);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+h2 {
+  margin: 3px 0 4px;
+  font-size: 17px;
+}
+
+.steps p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.note {
+  margin-top: 10px !important;
+  font-size: 13px;
+  color: var(--text) !important;
+}
+
+.note:empty {
+  display: none;
+}
+
+#tiles {
+  margin-top: 14px;
+}
+
+.done {
+  text-align: center;
+  margin-top: 28px;
+  font-size: 16px;
+  color: var(--ok);
+}

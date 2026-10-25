@@ -25,6 +25,8 @@ export interface Status {
   discord: 'connected' | 'offline' | 'unknown';
   user?: string;
   error?: string;
+  // bridge version, when it has answered
+  version?: string;
   // what we last sent, for the popup preview
   showing?: { media: Media; tabId: number; hidden: boolean } | null;
   reason?: string;
@@ -34,3 +36,6 @@ export interface Status {
 export type ContentMessage =
   | { type: 'media'; media: Media }
   | { type: 'gone' };
+
+// from the popup and setup page
+export type UiMessage = { type: 'probe' } | { type: 'removeBridge' } | { type: 'hideTitle'; title: string };
