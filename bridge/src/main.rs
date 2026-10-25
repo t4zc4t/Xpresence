@@ -94,6 +94,21 @@ impl Bridge {
         }
     }
 
+    fn check_discord(&mut self) {
+        if self.discord.is_some() {
+            return;
+        }
+        if let Some(id) = self.client_id.clone() {
+            match Discord::connect(&id) {
+                Ok(d) => {
+                    self.discord = Some(d);
+                    self.error = None;
+                }
+                Err(e) => self.error = Some(e.to_string()),
+            }
+        }
+    }
+
     fn status(&self) -> Value {
         json!({
             "type": "status",
@@ -154,7 +169,22 @@ fn host() {
                     b.wanted = None;
                     dirty = true;
                 }
-                Some("ping") => force = true,
+                Some("ping") => {
+                    // lets the setup page see Discord before anything plays
+                    b.check_discord();
+                    force = true;
+                }
+                Some("uninstall") => {
+                    if let Some(d) = b.discord.as_mut() {
+                        let _ = d.set_activity(None);
+                    }
+                    let res = install::uninstall_quietly();
+                    let _ = native::write(
+                        &mut out,
+                        &json!({ "type": "removed", "ok": res.is_ok(), "error": res.err().map(|e| e.to_string()) }),
+                    );
+                    return;
+                }
                 _ => {}
             },
             Ok(None) | Err(RecvTimeoutError::Disconnected) => break,

@@ -46,9 +46,41 @@ pub fn install(extra_id: Option<&str>) -> io::Result<()> {
 
 pub fn uninstall() -> io::Result<()> {
     unregister()?;
-    let dir = install_dir()?;
-    let _ = fs::remove_dir_all(&dir);
+    remove_files()?;
     println!("Xpresence bridge removed");
+    Ok(())
+}
+
+// called by the extension through the bridge itself, so the files may be in use
+pub fn uninstall_quietly() -> io::Result<()> {
+    unregister()?;
+    remove_files()
+}
+
+#[cfg(windows)]
+fn remove_files() -> io::Result<()> {
+    use std::os::windows::process::CommandExt;
+    use std::process::{Command, Stdio};
+    const DETACHED: u32 = 0x0000_0008;
+    const NO_WINDOW: u32 = 0x0800_0000;
+
+    let dir = install_dir()?;
+    // a running exe can't delete itself, so a hidden cmd does it a moment after we exit
+    Command::new("cmd")
+        .arg("/C")
+        .raw_arg(format!("ping 127.0.0.1 -n 3 > nul & rmdir /s /q \"{}\"", dir.display()))
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .creation_flags(DETACHED | NO_WINDOW)
+        .spawn()?;
+    Ok(())
+}
+
+#[cfg(unix)]
+fn remove_files() -> io::Result<()> {
+    // unix lets a running program delete its own file
+    let _ = fs::remove_dir_all(install_dir()?);
     Ok(())
 }
 
@@ -123,6 +155,7 @@ fn install_dir() -> io::Result<PathBuf> {
         home()?.join("Library/Application Support")
     } else {
         std::env::var_os("XDG_DATA_HOME")
+            .filter(|v| !v.is_empty())
             .map(PathBuf::from)
             .unwrap_or(home()?.join(".local/share"))
     };
@@ -144,6 +177,7 @@ fn browser_dirs() -> io::Result<Vec<(&'static str, PathBuf)>> {
         ]
     } else {
         let c = std::env::var_os("XDG_CONFIG_HOME")
+            .filter(|v| !v.is_empty())
             .map(PathBuf::from)
             .unwrap_or(h.join(".config"));
         vec![
