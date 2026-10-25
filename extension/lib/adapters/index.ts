@@ -2,6 +2,7 @@ import type { SiteId } from '../sites';
 import type { Media } from '../types';
 import { appletv } from './appletv';
 import { hotstar } from './hotstar';
+import { lunar } from './lunar';
 import { netflix } from './netflix';
 import { primevideo } from './primevideo';
 import { youtube } from './youtube';
@@ -24,5 +25,6 @@ export const ADAPTERS: Record<SiteId, Adapter> = {
   youtube,
   primevideo,
   hotstar,
+  lunar,
   ...Object.fromEntries(Object.values(local).map((m) => [m.id, m.adapter])),
 };

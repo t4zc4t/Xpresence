@@ -41,4 +41,12 @@ export const BUILTIN_SITES: Site[] = [
     matches: ['https://www.hotstar.com/*', 'https://www.jiohotstar.com/*'],
     host: /(^|\.)(jio)?hotstar\.com$/,
   },
+  {
+    id: 'lunar',
+    color: '#8b7cf6',
+    domain: 'lunarx.to',
+    name: 'Lunar',
+    matches: ['https://lunarx.to/*'],
+    host: /(^|\.)lunarx\.to$/,
+  },
 ];
