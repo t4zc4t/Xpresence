@@ -9,6 +9,8 @@ export interface Site {
   matches: string[];
   host: RegExp;
   domain: string;
+  // tile colour in the popup
+  color?: string;
 }
 
 // sites kept only on this machine, in extension/local (never committed)
@@ -17,6 +19,7 @@ interface LocalSite {
   name: string;
   domain: string;
   matches: string[];
+  color?: string;
 }
 
 const local = import.meta.glob<LocalSite>('../local/*/site.json', { eager: true, import: 'default' });

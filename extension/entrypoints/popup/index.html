@@ -5,52 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Xpresence</title>
   </head>
-  <body>
+  <body data-air="off">
     <header class="top">
-      <span class="tally" id="tally" aria-hidden="true"></span>
-      <h1>Xpresence</h1>
-      <label class="switch big" title="Share on Discord">
+      <span id="cat"></span>
+      <div class="brand">
+        <h1>Xpresence</h1>
+        <p id="air">Off air</p>
+      </div>
+      <label class="switch" title="Share on Discord">
         <input type="checkbox" id="enabled" />
         <span class="track"></span>
         <span class="sr">Share on Discord</span>
       </label>
     </header>
 
-    <section class="now" id="now" aria-live="polite"></section>
+    <nav class="tabs" role="tablist">
+      <button role="tab" id="tab-now" aria-controls="now" aria-selected="true">Now</button>
+      <button role="tab" id="tab-sites" aria-controls="sites" aria-selected="false">Sites</button>
+      <button role="tab" id="tab-settings" aria-controls="settings" aria-selected="false">Settings</button>
+    </nav>
 
-    <p class="health" id="health"></p>
-
-    <section class="snooze" id="snooze"></section>
-
-    <section class="sites">
-      <h2>Sites</h2>
-      <ul id="sites"></ul>
-    </section>
-
-    <details class="more">
-      <summary>More options</summary>
-      <label class="row">
-        <span>Show a "Watch on" button</span>
-        <span class="switch">
-          <input type="checkbox" id="buttons" />
-          <span class="track"></span>
-        </span>
-      </label>
-      <label class="row">
-        <span>Keep paused titles for</span>
-        <select id="paused">
-          <option value="0">No time</option>
-          <option value="2">2 minutes</option>
-          <option value="5">5 minutes</option>
-          <option value="15">15 minutes</option>
-        </select>
-      </label>
-      <label class="block">
-        <span>Private titles</span>
-        <small>One per line. These show as "Watching Netflix" with no name.</small>
-        <textarea id="blocklist" rows="3" spellcheck="false"></textarea>
-      </label>
-    </details>
+    <main>
+      <section id="now" role="tabpanel" aria-labelledby="tab-now"></section>
+      <section id="sites" role="tabpanel" aria-labelledby="tab-sites" hidden></section>
+      <section id="settings" role="tabpanel" aria-labelledby="tab-settings" hidden></section>
+    </main>
 
     <script type="module" src="./main.ts"></script>
   </body>

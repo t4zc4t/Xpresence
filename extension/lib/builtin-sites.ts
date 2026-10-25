@@ -3,6 +3,7 @@ import type { Site } from './sites';
 export const BUILTIN_SITES: Site[] = [
   {
     id: 'netflix',
+    color: '#e50914',
     domain: 'netflix.com',
     name: 'Netflix',
     matches: ['https://www.netflix.com/*'],
@@ -10,6 +11,7 @@ export const BUILTIN_SITES: Site[] = [
   },
   {
     id: 'appletv',
+    color: '#f5f5f7',
     domain: 'tv.apple.com',
     name: 'Apple TV',
     matches: ['https://tv.apple.com/*'],
@@ -17,6 +19,7 @@ export const BUILTIN_SITES: Site[] = [
   },
   {
     id: 'youtube',
+    color: '#ff0033',
     domain: 'youtube.com',
     name: 'YouTube',
     matches: ['https://www.youtube.com/*', 'https://m.youtube.com/*'],
@@ -24,6 +27,7 @@ export const BUILTIN_SITES: Site[] = [
   },
   {
     id: 'primevideo',
+    color: '#1a98ff',
     domain: 'primevideo.com',
     name: 'Prime Video',
     matches: ['https://www.primevideo.com/*'],
@@ -31,6 +35,7 @@ export const BUILTIN_SITES: Site[] = [
   },
   {
     id: 'hotstar',
+    color: '#1f80e0',
     domain: 'hotstar.com',
     name: 'JioHotstar',
     matches: ['https://www.hotstar.com/*', 'https://www.jiohotstar.com/*'],

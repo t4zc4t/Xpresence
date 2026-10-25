@@ -1,71 +1,111 @@
-import '@fontsource-variable/bricolage-grotesque/opsz.css';
+import '@/assets/ui.css';
 import './style.css';
 import { browser } from 'wxt/browser';
 import { episodeLine } from '@/lib/activity';
-import { RELEASES_URL } from '@/lib/config';
+import { BRIDGE_VERSION, bridgeDownload, olderThan } from '@/lib/config';
 import { getSettings, saveSettings, siteConf, type Settings } from '@/lib/settings';
 import { SITES, siteById } from '@/lib/sites';
-import type { Status } from '@/lib/types';
+import type { Status, UiMessage } from '@/lib/types';
+import { bg, cat, clock, el, siteTiles } from '@/lib/ui';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+const send = (msg: UiMessage) => browser.runtime.sendMessage(msg).catch(() => {});
 
 let settings: Settings;
 let status: Status | undefined;
+let tab: 'now' | 'sites' | 'settings' = 'now';
 
-function el<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  props: Partial<HTMLElementTagNameMap[K]> = {},
-  ...kids: (Node | string | undefined)[]
-): HTMLElementTagNameMap[K] {
-  const e = Object.assign(document.createElement(tag), props);
-  for (const k of kids) if (k != null) e.append(k);
-  return e;
-}
+const snoozed = () => settings.snoozeUntil > Date.now();
+const timeOf = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
-function clock(sec: number): string {
-  const s = Math.max(0, Math.floor(sec));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const r = String(s % 60).padStart(2, '0');
-  return h ? `${h}:${String(m).padStart(2, '0')}:${r}` : `${m}:${r}`;
-}
+// --- header ---
 
-function bg(url?: string): string {
-  return url && url.startsWith('https://') ? `url(${JSON.stringify(url)})` : '';
-}
-
-// --- now playing card ---
-
-function renderNow() {
-  const box = $('now');
-  const tally = $('tally');
-  box.replaceChildren();
-  tally.className = 'tally';
-
+function renderHeader() {
   const shown = status?.showing;
-  if (!shown) {
-    let head = 'Nothing on air';
-    let body: (Node | string)[] = [status?.reason ?? 'Play something on a site you switched on.'];
-    if (settings.snoozeUntil > Date.now()) {
-      head = 'Snoozed';
-      body = ['Nothing is shared until the snooze ends.'];
-    } else if (!settings.enabled) {
-      head = 'Sharing is off';
-      body = ['Turn on the switch above to share again.'];
-    } else if (!SITES.some((s) => siteConf(settings, s.id).on)) {
-      head = 'Pick your sites';
-      body = ['Switch on the sites you want to share below.'];
-    }
-    box.append(el('p', { className: 'empty' }, el('strong', { textContent: head }), ...body));
-    return;
+  const site = shown ? siteById(shown.media.site) : undefined;
+  let air: 'live' | 'paused' | 'off' = 'off';
+  let text = 'Off air';
+
+  if (!settings.enabled) text = 'Sharing is off';
+  else if (snoozed()) text = `Snoozed until ${timeOf(settings.snoozeUntil)}`;
+  else if (shown && site) {
+    air = shown.media.playing ? 'live' : 'paused';
+    text = `${shown.media.playing ? 'On air' : 'Paused'} · ${site.name}`;
+  }
+  document.body.dataset.air = air;
+  $('air').textContent = text;
+  $<HTMLInputElement>('enabled').checked = settings.enabled;
+}
+
+// --- now tab ---
+
+function setupCard(): HTMLElement {
+  const downloads = bridgeDownload();
+  return el(
+    'div',
+    { className: 'card empty setup' },
+    el('strong', { textContent: 'Connect to Discord' }),
+    el('p', { textContent: 'Xpresence needs its small helper app to talk to Discord. It takes a few seconds.' }),
+    el(
+      'ol',
+      {},
+      el('li', {}, el('span', {}, 'Download the helper', el('small', { textContent: 'About 300 KB, no installer' }))),
+      el('li', {}, el('span', {}, 'Open it once', el('small', { textContent: 'It sets itself up and closes' }))),
+      el('li', {}, el('span', {}, 'Come back here', el('small', { textContent: 'This page updates on its own' }))),
+    ),
+    el(
+      'div',
+      { className: 'actions' },
+      ...downloads.map((d, i) => el('a', { className: `btn${i ? '' : ' primary'}`, href: d.url, textContent: d.label })),
+    ),
+  );
+}
+
+function emptyCard(): HTMLElement {
+  let head = 'Nothing playing';
+  let body = 'Play something on a site you share and it shows up here.';
+  if (!settings.enabled) {
+    head = 'Sharing is off';
+    body = 'Flip the switch up top to go back on air.';
+  } else if (snoozed()) {
+    head = 'Snoozed';
+    body = `Nothing is shared until ${timeOf(settings.snoozeUntil)}.`;
+  } else if (!SITES.some((s) => siteConf(settings, s.id).on)) {
+    head = 'Pick your sites';
+    body = 'Choose which sites Xpresence is allowed to share.';
   }
 
+  const card = el('div', { className: 'card empty' }, el('strong', { textContent: head }), el('p', { textContent: body }));
+
+  const on = SITES.filter((s) => siteConf(settings, s.id).on);
+  if (on.length && settings.enabled && !snoozed()) {
+    const row = el('div', { className: 'onsites', title: 'Sites you share' });
+    for (const s of on) {
+      const m = el('span', { className: 'mono', textContent: s.name.charAt(0), title: s.name });
+      m.style.setProperty('--c', s.color ?? 'var(--raise)');
+      if (s.color === '#f5f5f7') m.style.color = '#111';
+      row.append(m);
+    }
+    card.append(row);
+  }
+  if (!on.length) {
+    const go = el('button', { className: 'btn primary', type: 'button', textContent: 'Choose sites' });
+    go.onclick = () => openTab('sites');
+    card.append(el('div', { className: 'actions' }, go));
+  }
+  return card;
+}
+
+function mediaCard(): HTMLElement {
+  const shown = status!.showing!;
   const m = shown.media;
   const site = siteById(m.site);
-  tally.classList.add(m.playing ? 'live' : 'paused');
+  const pic = shown.hidden ? m.siteIcon : (m.poster ?? m.siteIcon);
+
+  const card = el('div', { className: 'card' });
+  card.style.setProperty('--art', bg(pic));
 
   const art = el('div', { className: 'art' });
-  const pic = shown.hidden ? m.siteIcon : (m.poster ?? m.siteIcon);
   art.style.backgroundImage = bg(pic);
   if (!shown.hidden && m.poster && m.siteIcon) {
     const badge = el('span', { className: 'badge' });
@@ -73,21 +113,26 @@ function renderNow() {
     art.append(badge);
   }
 
-  const line = shown.hidden ? 'Title hidden' : m.kind === 'live' ? 'Live' : (episodeLine(m) ?? '');
-  const info = el(
-    'div',
-    {},
-    el('div', { className: 'where', textContent: `${m.playing ? 'Watching' : 'Paused'} on ${site?.name ?? 'the web'}` }),
-    el('div', { className: 'title', textContent: shown.hidden ? (site?.name ?? '') : m.title }),
-    line ? el('div', { className: 'state', textContent: line }) : undefined,
+  const line = shown.hidden ? 'Title hidden on Discord' : m.kind === 'live' ? 'Live' : episodeLine(m);
+  card.append(
+    el(
+      'div',
+      { className: 'media' },
+      art,
+      el(
+        'div',
+        {},
+        el('div', { className: 'where', textContent: `${m.playing ? 'Watching' : 'Paused'} on ${site?.name ?? 'the web'}` }),
+        el('div', { className: 'title', textContent: shown.hidden ? (site?.name ?? '') : m.title }),
+        line ? el('div', { className: 'state', textContent: line }) : null,
+      ),
+    ),
   );
 
-  const card = el('div', { className: 'card' }, art, info);
-
   if (!shown.hidden && m.duration && m.position != null && m.kind !== 'live') {
-    const pos = m.playing && status ? m.position + (Date.now() - status.updatedAt) / 1000 : m.position;
+    const pos = Math.min(m.duration, m.playing && status ? m.position + (Date.now() - status.updatedAt) / 1000 : m.position);
     const fill = el('span');
-    fill.style.width = `${Math.min(100, (pos / m.duration) * 100)}%`;
+    fill.style.width = `${(pos / m.duration) * 100}%`;
     card.append(
       el(
         'div',
@@ -99,135 +144,221 @@ function renderNow() {
     );
   }
 
-  if (!shown.hidden && settings.buttons) {
-    card.append(el('a', { className: 'watch', href: m.url, target: '_blank', textContent: `Watch on ${site?.name}` }));
+  const actions = el('div', { className: 'actions' });
+  const open = el('button', { className: 'btn', type: 'button', textContent: 'Go to tab' });
+  open.onclick = async () => {
+    const t = await browser.tabs.update(shown.tabId, { active: true }).catch(() => undefined);
+    if (t?.windowId != null) await browser.windows.update(t.windowId, { focused: true });
+    window.close();
+  };
+  actions.append(open);
+  if (!shown.hidden) {
+    const hide = el('button', { className: 'btn', type: 'button', textContent: 'Keep this one private' });
+    hide.title = 'Adds it to your private titles, so Discord only shows the site';
+    hide.onclick = () => void send({ type: 'hideTitle', title: m.title });
+    actions.append(hide);
   }
-  box.append(card);
+  card.append(actions);
+  return card;
 }
 
-// --- bridge and discord health ---
-
-function renderHealth() {
-  const box = $('health');
-  box.replaceChildren();
-  if (!status) return;
-
-  const item = (good: boolean | null, text: string) =>
-    el('span', { className: good == null ? '' : good ? 'good' : 'bad' }, el('i', { className: 'dot' }), text);
-
-  const b = status.bridge;
-  if (b === 'idle') {
-    box.append(item(null, 'Bridge sleeps until something plays'));
-    return;
-  }
-  box.append(item(b === 'connected', b === 'connected' ? 'Bridge running' : b === 'connecting' ? 'Starting bridge' : 'Bridge not reachable'));
-  if (b === 'connected') {
-    box.append(
-      item(
-        status.discord === 'connected',
-        status.discord === 'connected' ? `Discord${status.user ? ` as ${status.user}` : ''}` : 'Discord not found',
-      ),
-    );
-  }
-
-  let fix: (Node | string)[] | undefined;
-  if (b === 'missing') {
-    fix = ['Install the bridge app to connect to Discord. ', el('a', { href: RELEASES_URL, target: '_blank', textContent: 'Get it here' })];
-  } else if (b === 'connected' && status.discord !== 'connected') {
-    fix = ['Open the Discord desktop app, Xpresence finds it on its own.'];
-  } else if (status.error && b !== 'connecting') {
-    fix = [status.error];
-  }
-  if (fix) box.append(el('span', { className: 'fix' }, ...fix));
-}
-
-// --- snooze ---
-
-function renderSnooze() {
-  const box = $('snooze');
-  box.replaceChildren();
-  const until = settings.snoozeUntil;
-
-  if (until > Date.now()) {
-    const time = new Date(until).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    const resume = el('button', { textContent: 'Resume now' });
+function snoozeRow(): HTMLElement | null {
+  if (!settings.enabled) return null;
+  const row = el('div', { className: 'row' });
+  if (snoozed()) {
+    const resume = el('button', { className: 'btn', type: 'button', textContent: 'Resume now' });
     resume.onclick = () => update((s) => (s.snoozeUntil = 0));
-    box.append(el('span', { className: 'note', textContent: `Snoozed until ${time}` }), resume);
-    return;
+    row.append(el('span', { className: 'note', textContent: `Snoozed until ${timeOf(settings.snoozeUntil)}` }), resume);
+    return row;
   }
-
-  const hour = el('button', { textContent: 'Snooze 1 hour' });
+  const hour = el('button', { className: 'btn', type: 'button', textContent: '1 hour' });
   hour.onclick = () => update((s) => (s.snoozeUntil = Date.now() + 3_600_000));
-  const night = el('button', { textContent: 'Snooze until midnight' });
+  const night = el('button', { className: 'btn', type: 'button', textContent: 'Until midnight' });
   night.onclick = () => {
     const d = new Date();
     d.setHours(24, 0, 0, 0);
-    update((s) => (s.snoozeUntil = d.getTime()));
+    void update((s) => (s.snoozeUntil = d.getTime()));
   };
-  box.append(hour, night);
+  row.append(el('span', { className: 'label', textContent: 'Snooze' }), hour, night);
+  return row;
 }
 
-// --- sites ---
+function healthLine(): HTMLElement | null {
+  if (!status) return null;
+  const item = (good: boolean | null, text: string) =>
+    el('span', { className: good == null ? '' : good ? 'good' : 'bad' }, el('i', { className: 'dot' }), text);
+  const box = el('div', { className: 'health' });
+  const b = status.bridge;
 
-function renderSites() {
-  const list = $('sites');
-  list.replaceChildren();
-
-  for (const site of SITES) {
-    const conf = siteConf(settings, site.id);
-
-    const hide = el('button', {
-      className: 'hide',
-      textContent: 'Hide title',
-      title: 'Share the site but not what you are watching',
-    });
-    hide.setAttribute('aria-pressed', String(conf.hideTitle));
-    hide.hidden = !conf.on;
-    hide.onclick = () => update((s) => {
-      const c = siteConf(s, site.id);
-      c.hideTitle = !c.hideTitle;
-    });
-
-    const input = el('input', { type: 'checkbox', checked: conf.on });
-    input.setAttribute('aria-label', `Share ${site.name}`);
-    input.onchange = () => {
-      if (!input.checked) {
-        void update((s) => (siteConf(s, site.id).on = false));
-        return;
-      }
-      // must be called straight from the click for the browser to allow it
-      browser.permissions.request({ origins: site.matches }).then((ok) => {
-        if (ok) void update((s) => (siteConf(s, site.id).on = true));
-        else input.checked = false;
-      });
-    };
-
-    list.append(
-      el(
-        'li',
-        {},
-        el('span', { className: `name${conf.on ? '' : ' off'}`, textContent: site.name }),
-        hide,
-        el('label', { className: 'switch' }, input, el('span', { className: 'track' })),
+  if (b === 'idle' || b === 'connecting') box.append(item(null, 'Checking the helper app…'));
+  else if (b === 'connected') {
+    box.append(item(true, 'Helper running'));
+    box.append(
+      item(
+        status.discord === 'connected',
+        status.discord === 'connected' ? `Discord${status.user ? ` · ${status.user}` : ''}` : 'Discord not open',
       ),
     );
+    if (status.discord !== 'connected') {
+      box.append(el('span', { className: 'fix', textContent: 'Open the Discord desktop app, Xpresence finds it by itself.' }));
+    }
+    if (olderThan(status.version, BRIDGE_VERSION)) {
+      box.append(
+        el(
+          'span',
+          { className: 'fix' },
+          'A newer helper is out. ',
+          el('a', { href: bridgeDownload()[0]!.url, textContent: 'Download it' }),
+          ' and open it once to update.',
+        ),
+      );
+    }
+  } else if (b === 'error') {
+    box.append(item(false, 'Helper stopped'), el('span', { className: 'fix', textContent: status.error ?? '' }));
+  }
+  return box;
+}
+
+function renderNow() {
+  const box = $('now');
+  const card =
+    status?.bridge === 'missing' ? setupCard() : status?.showing && settings.enabled ? mediaCard() : emptyCard();
+  box.replaceChildren(card, snoozeRow() ?? '', healthLine() ?? '');
+}
+
+// --- sites tab ---
+
+function renderSites() {
+  $('sites').replaceChildren(
+    siteTiles(settings, (s) => {
+      settings = s;
+      render();
+    }),
+    el('p', {
+      className: 'hint',
+      textContent: 'Tap a site to share it. The eye hides titles for that site, so Discord only shows its name.',
+    }),
+  );
+}
+
+// --- settings tab ---
+
+let armed: ReturnType<typeof setTimeout> | undefined;
+
+function renderSettings() {
+  const box = $('settings');
+  if (box.contains(document.activeElement) && document.activeElement?.tagName === 'TEXTAREA') return;
+
+  const buttons = el('input', { type: 'checkbox', checked: settings.buttons });
+  buttons.onchange = () => update((s) => (s.buttons = buttons.checked));
+
+  const seg = el('div', { className: 'seg', role: 'group' });
+  seg.setAttribute('aria-label', 'Keep paused titles for');
+  for (const [mins, label] of [
+    [0, 'Off'],
+    [2, '2m'],
+    [5, '5m'],
+    [15, '15m'],
+  ] as const) {
+    const b = el('button', { type: 'button', textContent: label });
+    b.setAttribute('aria-pressed', String(settings.pausedMinutes === mins));
+    b.onclick = () => update((s) => (s.pausedMinutes = mins));
+    seg.append(b);
+  }
+
+  const area = el('textarea', { rows: 3, spellcheck: false, value: settings.blocklist.join('\n') });
+  area.setAttribute('aria-label', 'Private titles');
+  area.onchange = () =>
+    update((s) => {
+      s.blocklist = area.value
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+    });
+
+  // removing takes two clicks, no browser dialogs
+  const removeBridge = el('button', { className: 'btn danger', type: 'button', textContent: 'Remove helper app' });
+  removeBridge.onclick = () => {
+    if (removeBridge.dataset.armed !== 'true') {
+      removeBridge.dataset.armed = 'true';
+      removeBridge.textContent = 'Click again to remove';
+      clearTimeout(armed);
+      armed = setTimeout(renderSettings, 4000);
+      return;
+    }
+    void send({ type: 'removeBridge' });
+    removeBridge.textContent = 'Removing…';
+  };
+
+  const removeAll = el('button', { className: 'btn danger', type: 'button', textContent: 'Remove Xpresence' });
+  removeAll.title = 'Removes the helper app, then asks the browser to remove the extension';
+  removeAll.onclick = async () => {
+    if (status?.bridge !== 'missing') {
+      void send({ type: 'removeBridge' });
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    await browser.management.uninstallSelf({ showConfirmDialog: true }).catch(() => {});
+  };
+
+  const b = status?.bridge;
+  const bridgeText =
+    b === 'missing'
+      ? 'Not installed on this computer'
+      : b === 'connected'
+        ? `Installed, version ${status?.version ?? '?'}`
+        : 'Checking…';
+
+  box.replaceChildren(
+    el(
+      'label',
+      { className: 'set' },
+      el('span', {}, 'Show a "Watch" button', el('small', { textContent: 'Friends can open what you are watching' })),
+      el('span', { className: 'switch' }, buttons, el('span', { className: 'track' })),
+    ),
+    el(
+      'div',
+      { className: 'set' },
+      el('span', {}, 'Keep paused titles', el('small', { textContent: 'How long a pause stays on Discord' })),
+      seg,
+    ),
+    el(
+      'label',
+      { className: 'block' },
+      el('span', { textContent: 'Private titles' }),
+      el('small', { textContent: 'One per line. These only show the site name, never the title.' }),
+      area,
+    ),
+    el(
+      'div',
+      { className: 'bridge' },
+      el('span', {}, 'Helper app ', el('small', { className: 'muted', textContent: `· ${bridgeText}` })),
+      el(
+        'div',
+        { className: 'actions' },
+        b === 'missing'
+          ? el('a', { className: 'btn primary', href: bridgeDownload()[0]!.url, textContent: 'Download helper' })
+          : removeBridge,
+        removeAll,
+      ),
+    ),
+  );
+}
+
+// --- tabs ---
+
+function openTab(name: typeof tab) {
+  tab = name;
+  for (const t of ['now', 'sites', 'settings'] as const) {
+    $(`tab-${t}`).setAttribute('aria-selected', String(t === name));
+    $(t).hidden = t !== name;
   }
 }
 
-function renderOptions() {
-  $<HTMLInputElement>('enabled').checked = settings.enabled;
-  $<HTMLInputElement>('buttons').checked = settings.buttons;
-  $<HTMLSelectElement>('paused').value = String(settings.pausedMinutes);
-  const area = $<HTMLTextAreaElement>('blocklist');
-  if (document.activeElement !== area) area.value = settings.blocklist.join('\n');
-}
-
 function render() {
+  renderHeader();
   renderNow();
-  renderHealth();
-  renderSnooze();
   renderSites();
-  renderOptions();
+  renderSettings();
 }
 
 async function update(change: (s: Settings) => void) {
@@ -236,29 +367,30 @@ async function update(change: (s: Settings) => void) {
 }
 
 async function start() {
+  $('cat').append(cat());
   settings = await getSettings();
   ({ status } = (await browser.storage.session.get('status')) as { status?: Status });
   render();
 
-  $<HTMLInputElement>('enabled').onchange = (e) =>
-    update((s) => (s.enabled = (e.target as HTMLInputElement).checked));
-  $<HTMLInputElement>('buttons').onchange = (e) =>
-    update((s) => (s.buttons = (e.target as HTMLInputElement).checked));
-  $<HTMLSelectElement>('paused').onchange = (e) =>
-    update((s) => (s.pausedMinutes = Number((e.target as HTMLSelectElement).value)));
-  $<HTMLTextAreaElement>('blocklist').onchange = (e) =>
-    update((s) => {
-      s.blocklist = (e.target as HTMLTextAreaElement).value
-        .split('\n')
-        .map((l) => l.trim())
-        .filter(Boolean);
-    });
+  for (const t of ['now', 'sites', 'settings'] as const) $(`tab-${t}`).onclick = () => openTab(t);
+  // arrow keys move between tabs
+  document.querySelector('.tabs')!.addEventListener('keydown', (e) => {
+    const k = (e as KeyboardEvent).key;
+    if (k !== 'ArrowLeft' && k !== 'ArrowRight') return;
+    const order = ['now', 'sites', 'settings'] as const;
+    const next = order[(order.indexOf(tab) + (k === 'ArrowRight' ? 1 : 2)) % 3]!;
+    openTab(next);
+    $(`tab-${next}`).focus();
+  });
+
+  $<HTMLInputElement>('enabled').onchange = (e) => update((s) => (s.enabled = (e.target as HTMLInputElement).checked));
 
   browser.storage.onChanged.addListener((changes, area) => {
     if (area === 'session' && changes.status) {
       status = changes.status.newValue as Status | undefined;
+      renderHeader();
       renderNow();
-      renderHealth();
+      renderSettings();
     }
     if (area === 'sync' && changes.settings) {
       void getSettings().then((s) => {
@@ -268,11 +400,13 @@ async function start() {
     }
   });
 
-  // wakes the background so the card is fresh
+  // wakes the background, which checks on the helper app
   browser.runtime.connect({ name: 'popup' });
 
-  // keep the progress bar moving
-  setInterval(renderNow, 1000);
+  // keeps the progress bar moving
+  setInterval(() => {
+    if (status?.showing?.media.playing) renderNow();
+  }, 1000);
 }
 
 void start();
