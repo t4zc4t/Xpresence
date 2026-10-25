@@ -2,7 +2,7 @@
 
 Xpresence shows what I'm watching in the browser on my Discord profile, like PreMiD does, but lighter and with more control over what gets shared.
 
-It has two parts. The extension reads what's playing on the sites I switch on, and a tiny bridge app passes that to the Discord desktop app. The bridge isn't a tray app that runs all the time, the browser starts it only when something is playing and it closes when the browser closes, which also clears the status right away instead of leaving it stuck.
+It has two parts. The extension reads what's playing on the sites I switch on, and a tiny helper app (the bridge) passes that to the Discord desktop app. The bridge isn't a tray app that runs all the time, the browser starts it only when something is playing and it closes when the browser closes, which also clears the status right away instead of leaving it stuck.
 
 ## Sites
 
@@ -16,11 +16,15 @@ The popup shows a live preview of the card Discord will show, plus whether the b
 
 ## Install
 
-1. Download the bridge for your system from the [latest release](https://github.com/t4zc4t/Xpresence/releases/latest) and run it once. It copies itself to your app data folder and registers with Brave, Chrome, Edge and Chromium.
-2. Load the extension. For now that means downloading `xpresence-extension.zip` from the same release, unzipping it, and using "Load unpacked" on the extensions page with developer mode on.
-3. Open the popup and switch on the sites you want.
+1. Load the extension. For now that means downloading `xpresence-extension.zip` from the [latest release](https://github.com/t4zc4t/Xpresence/releases/latest), unzipping it, and using "Load unpacked" on the extensions page with developer mode on.
+2. A setup page opens with a download button for the helper app. Open the helper once, it copies itself to your app data folder and registers with Brave, Chrome, Edge and Chromium, and the setup page ticks itself off.
+3. Switch on the sites you want, right there or later from the popup.
 
-To remove the bridge later, run `xpresence-bridge uninstall`.
+## Removing it
+
+In the popup, go to Settings. "Remove helper app" takes the bridge off your computer, and "Remove Xpresence" does that and then removes the extension too.
+
+If the extension is already gone, run the helper from your app data folder (`%LOCALAPPDATA%\Xpresence` on Windows) with `xpresence-bridge uninstall`, or just download it again and run `xpresence-bridge uninstall`.
 
 ## Building it yourself
 
