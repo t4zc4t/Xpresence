@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  bridge:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            file: xpresence-bridge-windows-x64.exe
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            file: xpresence-bridge-macos-arm64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            file: xpresence-bridge-macos-x64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            file: xpresence-bridge-linux-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - run: rustup update stable && rustup default stable && rustup target add ${{ matrix.target }}
+      - run: cargo build --release --target ${{ matrix.target }}
+        working-directory: bridge
+      - name: Rename binary
+        shell: bash
+        run: |
+          ext=""
+          [[ "${{ matrix.target }}" == *windows* ]] && ext=".exe"
+          cp "bridge/target/${{ matrix.target }}/release/xpresence-bridge$ext" "${{ matrix.file }}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.file }}
+          path: ${{ matrix.file }}
+
+  extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: extension/package-lock.json
+      - run: npm ci && npm run zip
+        working-directory: extension
+      - run: cp extension/.output/*-chrome.zip xpresence-extension.zip
+      - uses: actions/upload-artifact@v7
+        with:
+          name: xpresence-extension.zip
+          path: xpresence-extension.zip
+
+  publish:
+    needs: [bridge, extension]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*
+          generate_release_notes: true
