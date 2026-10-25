@@ -6,7 +6,7 @@ It has two parts. The extension reads what's playing on the sites I switch on, a
 
 ## Sites
 
-Netflix, Apple TV, YouTube, Prime Video and JioHotstar for now. Each one is off until I switch it on in the popup, and the extension only asks for access to a site at that point.
+Netflix, Apple TV, YouTube, Prime Video, JioHotstar and Lunar (anime) for now. Each one is off until I switch it on in the popup, and the extension only asks for access to a site at that point.
 
 ## What I can control
 
@@ -19,6 +19,10 @@ The popup shows a live preview of the card Discord will show, plus whether the b
 1. Load the extension. For now that means downloading `xpresence-extension.zip` from the [latest release](https://github.com/t4zc4t/Xpresence/releases/latest), unzipping it, and using "Load unpacked" on the extensions page with developer mode on.
 2. A setup page opens with a download button for the helper app. Open the helper once, it copies itself to your app data folder and registers with Brave, Chrome, Edge and Chromium, and the setup page ticks itself off.
 3. Switch on the sites you want, right there or later from the popup.
+
+## Updating
+
+The popup checks GitHub once a day and shows a note when a new version is out. To update, download the new `xpresence-extension.zip`, unzip it over the old folder, and click reload on the extensions page. Your settings stay as they are.
 
 ## Removing it
 
