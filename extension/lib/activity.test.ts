@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { basicActivity, buildActivity, sameActivity } from './activity';
-import { cleanTitle, seasonEpisode } from './page';
+import { cleanTitle, clockToSeconds, seasonEpisode } from './page';
 import { DEFAULTS, merge } from './settings';
 import type { Media } from './types';
 
@@ -70,6 +70,35 @@ describe('buildActivity', () => {
     expect(a.details_url).toBeUndefined();
     expect(a.assets?.large_url).toBeUndefined();
     expect(a.assets?.large_image).toBe('https://x.test/p.jpg');
+  });
+});
+
+describe('live streams', () => {
+  const stream: Media = {
+    site: 'twitch',
+    kind: 'live',
+    title: 'Caedrel',
+    subtitle: 'League of Legends',
+    caption: 'WORLDS 2026 SWISS STAGE',
+    playing: true,
+    position: 3600,
+    poster: 'https://static-cdn.jtvnw.net/a-300x300.png',
+    url: 'https://www.twitch.tv/caedrel',
+  };
+  const s = merge({ sites: { ...DEFAULTS.sites, twitch: { on: true, hideTitle: false } } });
+
+  it('counts up from when the stream started', () => {
+    const a = buildActivity(stream, s, 10_000_000);
+    expect(a.name).toBe('Twitch');
+    expect(a.state).toBe('Live · League of Legends');
+    expect(a.timestamps).toEqual({ start: 6_400_000 });
+    expect(a.assets?.large_text).toBe('WORLDS 2026 SWISS STAGE');
+  });
+
+  it('reads uptime clocks', () => {
+    expect(clockToSeconds('5:14:115:14:11 since live stream started')).toBe(5 * 3600 + 14 * 60 + 11);
+    expect(clockToSeconds('12:34')).toBe(754);
+    expect(clockToSeconds('soon')).toBeUndefined();
   });
 });
 

@@ -94,7 +94,7 @@ export function buildActivity(m: Media, settings: Settings, now = Date.now()): A
   if (large) {
     a.assets = {
       large_image: large,
-      large_text: fit(poster ? m.title : siteName),
+      large_text: fit(poster ? (m.caption ?? m.title) : siteName),
       large_url: url,
       small_image: poster && icon ? icon : undefined,
       small_text: poster && icon ? siteName : undefined,

@@ -14,6 +14,8 @@ export interface Media {
   position?: number;
   duration?: number;
   poster?: string;
+  // shown when hovering the big image, e.g. a stream's title
+  caption?: string;
   siteIcon?: string;
   url: string;
 }

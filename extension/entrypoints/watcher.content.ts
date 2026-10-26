@@ -25,6 +25,8 @@ export default defineContentScript({
     let last: Media | null = null;
     let lastKey = '';
     let sentAt = 0;
+    // live streams without a known start count from when we started watching
+    let liveSince: { title: string; at: number } | undefined;
 
     const send = (msg: ContentMessage) => {
       browser.runtime.sendMessage(msg).catch(() => {});
@@ -41,17 +43,28 @@ export default defineContentScript({
       const title = r.title ?? session?.title ?? cleanTitle(document.title, site.name);
       if (!title) return null;
 
+      const kind = r.kind ?? 'video';
+      let position = Number.isFinite(video.currentTime) ? video.currentTime : undefined;
+      if (kind === 'live') {
+        if (r.startedAt) position = Math.max(0, (Date.now() - r.startedAt) / 1000);
+        else {
+          if (liveSince?.title !== title) liveSince = { title, at: Date.now() };
+          position = (Date.now() - liveSince.at) / 1000;
+        }
+      }
+
       return {
         site: site.id,
-        kind: r.kind ?? 'video',
+        kind,
         title,
         subtitle: r.subtitle,
         season: r.season,
         episode: r.episode,
         playing: !video.paused && !video.ended,
-        position: Number.isFinite(video.currentTime) ? video.currentTime : undefined,
-        duration: Number.isFinite(video.duration) && video.duration > 0 ? video.duration : undefined,
+        position,
+        duration: kind !== 'live' && Number.isFinite(video.duration) && video.duration > 0 ? video.duration : undefined,
         poster: r.poster ?? session?.artwork,
+        caption: r.caption,
         siteIcon: siteIcon(),
         url: r.url ?? cleanUrl(),
       };

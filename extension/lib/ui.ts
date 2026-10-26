@@ -54,9 +54,18 @@ export function cat(): SVGSVGElement {
   return svg;
 }
 
-function monogram(site: Site): HTMLElement {
+// true for colours like Kick green where white text would be hard to read
+export function isLight(hex: string | undefined): boolean {
+  const m = hex?.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  if (!m) return false;
+  const [r, g, b] = m.slice(1).map((x) => parseInt(x, 16) / 255) as [number, number, number];
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.6;
+}
+
+export function monogram(site: Site): HTMLElement {
   const m = el('span', { className: 'mono', textContent: site.name.replace(/^the\s+/i, '').charAt(0) });
   m.style.setProperty('--c', site.color ?? `hsl(${[...site.id].reduce((a, c) => a + c.charCodeAt(0), 0) % 360} 70% 55%)`);
+  if (isLight(site.color)) m.style.color = '#111';
   return m;
 }
 
