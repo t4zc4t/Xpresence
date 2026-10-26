@@ -1,6 +1,6 @@
 // Turns what a tab is playing into a Discord activity payload.
 
-import { siteById, siteLogo } from './sites';
+import { hostedLogo, siteById, siteLogo } from './sites';
 import { isBlocked, type Settings } from './settings';
 import type { Media } from './types';
 
@@ -54,7 +54,7 @@ export function shouldHide(m: Media, settings: Settings): boolean {
 export function buildActivity(m: Media, settings: Settings, now = Date.now()): Activity {
   const site = siteById(m.site);
   const siteName = site?.name ?? 'the web';
-  const icon = https(m.siteIcon) ?? (site ? siteLogo(site) : undefined);
+  const icon = hostedLogo(site) ?? https(m.siteIcon) ?? (site ? siteLogo(site) : undefined);
 
   if (shouldHide(m, settings)) {
     return {

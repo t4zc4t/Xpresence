@@ -59,7 +59,7 @@ describe('buildActivity', () => {
 
   it('ignores non https images and links', () => {
     const a = buildActivity({ ...show, poster: 'http://x.test/a.jpg', siteIcon: undefined, url: 'javascript:alert(1)' }, settings);
-    expect(a.assets?.large_image).toContain('favicons?domain=netflix.com');
+    expect(a.assets?.large_image).toBe('https://raw.githubusercontent.com/t4zc4t/Xpresence/main/extension/public/sites/netflix.png');
     expect(a.details_url).toBeUndefined();
     expect(a.buttons).toBeUndefined();
   });
@@ -93,6 +93,18 @@ describe('live streams', () => {
     expect(a.state).toBe('Live · League of Legends');
     expect(a.timestamps).toEqual({ start: 6_400_000 });
     expect(a.assets?.large_text).toBe('WORLDS 2026 SWISS STAGE');
+  });
+
+  it('shows the sport for DAZN events', () => {
+    const a = buildActivity(
+      { ...stream, site: 'dazn', title: "Ballon d'Or 2026 Ceremony", subtitle: 'Football', caption: undefined },
+      merge({ sites: { ...DEFAULTS.sites, dazn: { on: true, hideTitle: false } } }),
+      10_000_000,
+    );
+    expect(a.name).toBe('DAZN');
+    expect(a.details).toBe("Ballon d'Or 2026 Ceremony");
+    expect(a.state).toBe('Live · Football');
+    expect(a.assets?.small_image).toContain('/sites/dazn.png');
   });
 
   it('reads uptime clocks', () => {

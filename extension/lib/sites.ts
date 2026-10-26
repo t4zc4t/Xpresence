@@ -40,7 +40,14 @@ export function siteForHost(host: string): Site | undefined {
   return SITES.find((s) => s.host.test(host));
 }
 
-// fallback image when the page has no usable icon, Discord fetches it through its own proxy
+// Discord loads images itself and some sites block it, so built-in sites use tiles from this repo
+const TILES = 'https://raw.githubusercontent.com/t4zc4t/Xpresence/main/extension/public/sites';
+
+export function hostedLogo(site: Site | undefined): string | undefined {
+  return site && BUILTIN_SITES.some((s) => s.id === site.id) ? `${TILES}/${site.id}.png` : undefined;
+}
+
+// last resort for sites without a tile
 export function siteLogo(site: Site): string {
   return `https://www.google.com/s2/favicons?domain=${site.domain}&sz=256`;
 }
