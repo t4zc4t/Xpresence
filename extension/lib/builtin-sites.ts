@@ -68,6 +68,7 @@ export const BUILTIN_SITES: Site[] = [
   {
     id: 'dazn',
     color: '#f8fc00',
+    logo: 'dazn-2.png',
     domain: 'dazn.com',
     name: 'DAZN',
     matches: ['https://www.dazn.com/*'],

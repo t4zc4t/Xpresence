@@ -11,6 +11,8 @@ export interface Site {
   domain: string;
   // tile colour in the popup
   color?: string;
+  // tile file for Discord, give it a new name when the image changes since Discord caches by link
+  logo?: string;
 }
 
 // sites kept only on this machine, in extension/local (never committed)
@@ -42,11 +44,10 @@ export function siteForHost(host: string): Site | undefined {
 
 // Discord loads images itself and some sites block it, so built-in sites use tiles from this repo
 const TILES = 'https://raw.githubusercontent.com/t4zc4t/Xpresence/main/extension/public/sites';
-// bump when a tile changes, Discord caches images by link
-const TILES_VERSION = 2;
 
 export function hostedLogo(site: Site | undefined): string | undefined {
-  return site && BUILTIN_SITES.some((s) => s.id === site.id) ? `${TILES}/${site.id}.png?v=${TILES_VERSION}` : undefined;
+  const builtin = BUILTIN_SITES.find((s) => s.id === site?.id);
+  return builtin ? `${TILES}/${builtin.logo ?? `${builtin.id}.png`}` : undefined;
 }
 
 // last resort for sites without a tile
