@@ -42,9 +42,11 @@ export function siteForHost(host: string): Site | undefined {
 
 // Discord loads images itself and some sites block it, so built-in sites use tiles from this repo
 const TILES = 'https://raw.githubusercontent.com/t4zc4t/Xpresence/main/extension/public/sites';
+// bump when a tile changes, Discord caches images by link
+const TILES_VERSION = 2;
 
 export function hostedLogo(site: Site | undefined): string | undefined {
-  return site && BUILTIN_SITES.some((s) => s.id === site.id) ? `${TILES}/${site.id}.png` : undefined;
+  return site && BUILTIN_SITES.some((s) => s.id === site.id) ? `${TILES}/${site.id}.png?v=${TILES_VERSION}` : undefined;
 }
 
 // last resort for sites without a tile
