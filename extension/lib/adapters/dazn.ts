@@ -1,24 +1,33 @@
-import { cleanTitle, cleanUrl, mainVideo, meta, mediaSession } from '../page';
+import { cleanUrl, isEndless, mainVideo, meta, mediaSession } from '../page';
 import type { Adapter } from './index';
 
-// DAZN's player fills in the media session like most players, so lean on that
+// competition logos come from DAZN's image service, ask it for a bigger png
+function bigLogo(): string | undefined {
+  const img = [...document.querySelectorAll('img')].find((i) =>
+    /^https:\/\/image\.discovery\.indazn\.com\/.+\/v3\/.+\/fill\//.test(i.src),
+  );
+  return img?.src.replace(/\/fill\/(.+?)\/\d+\/\d+\/\d+\/(webp|png|jpe?g)\/image.*$/, '/fill/$1/80/512/512/png/image');
+}
+
 export const dazn: Adapter = () => {
   const video = mainVideo();
-  if (!video) return null;
+  if (!video || !/\/(fixture|home|player)\//.test(location.pathname)) return null;
 
+  // titles look like "DAZN | Football | Ballon d'Or 2026 Ceremony"
+  const parts = document.title
+    .split('|')
+    .map((p) => p.trim())
+    .filter((p) => p && !/^dazn$/i.test(p));
   const session = mediaSession();
-  let page = cleanTitle(meta('og:title') ?? document.title, 'DAZN');
-  if (page && /^dazn$/i.test(page)) page = undefined;
-
-  const title = session?.title ?? page;
+  const title = session?.title ?? parts.at(-1);
   if (!title) return null;
+  const sport = parts.length > 1 ? parts[0] : undefined;
 
   return {
-    kind: Number.isFinite(video.duration) ? 'video' : 'live',
+    kind: isEndless(video) ? 'live' : 'video',
     title,
-    // usually the competition, like "Serie A"
-    subtitle: session?.artist || session?.album || (page !== title ? page : undefined),
-    poster: session?.artwork ?? meta('og:image'),
+    subtitle: session?.artist || sport,
+    poster: session?.artwork ?? bigLogo() ?? meta('og:image'),
     url: cleanUrl(),
   };
 };

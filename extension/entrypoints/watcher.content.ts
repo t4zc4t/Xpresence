@@ -1,7 +1,7 @@
 import { browser } from 'wxt/browser';
 import { defineContentScript } from 'wxt/utils/define-content-script';
 import { ADAPTERS } from '@/lib/adapters';
-import { cleanTitle, cleanUrl, mainVideo, mediaSession, siteIcon } from '@/lib/page';
+import { cleanTitle, cleanUrl, isEndless, mainVideo, mediaSession, siteIcon } from '@/lib/page';
 import { siteForHost } from '@/lib/sites';
 import type { ContentMessage, Media } from '@/lib/types';
 
@@ -43,7 +43,7 @@ export default defineContentScript({
       const title = r.title ?? session?.title ?? cleanTitle(document.title, site.name);
       if (!title) return null;
 
-      const kind = r.kind ?? 'video';
+      const kind = isEndless(video) ? 'live' : (r.kind ?? 'video');
       let position = Number.isFinite(video.currentTime) ? video.currentTime : undefined;
       if (kind === 'live') {
         if (r.startedAt) position = Math.max(0, (Date.now() - r.startedAt) / 1000);

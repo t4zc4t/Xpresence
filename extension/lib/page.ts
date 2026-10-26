@@ -10,6 +10,11 @@ export function meta(name: string): string | undefined {
   return el?.content?.trim() || undefined;
 }
 
+// live players often report a huge or infinite length, and some (DAZN) count from 1970
+export function isEndless(v: HTMLVideoElement): boolean {
+  return !Number.isFinite(v.duration) || v.duration > 7 * 86400 || v.currentTime > 1e8;
+}
+
 // the main video on the page: playing first, then the biggest one
 export function mainVideo(): HTMLVideoElement | undefined {
   const videos = [...document.querySelectorAll('video')].filter((v) => v.readyState > 0);
