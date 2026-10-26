@@ -59,7 +59,7 @@ describe('buildActivity', () => {
 
   it('ignores non https images and links', () => {
     const a = buildActivity({ ...show, poster: 'http://x.test/a.jpg', siteIcon: undefined, url: 'javascript:alert(1)' }, settings);
-    expect(a.assets?.large_image).toBe('https://raw.githubusercontent.com/t4zc4t/Xpresence/main/extension/public/sites/netflix.png?v=2');
+    expect(a.assets?.large_image).toBe('https://raw.githubusercontent.com/t4zc4t/Xpresence/main/extension/public/sites/netflix.png');
     expect(a.details_url).toBeUndefined();
     expect(a.buttons).toBeUndefined();
   });
@@ -104,7 +104,7 @@ describe('live streams', () => {
     expect(a.name).toBe('DAZN');
     expect(a.details).toBe("Ballon d'Or 2026 Ceremony");
     expect(a.state).toBe('Live · Football');
-    expect(a.assets?.small_image).toContain('/sites/dazn.png');
+    expect(a.assets?.small_image).toContain('/sites/dazn-2.png');
   });
 
   it('reads uptime clocks', () => {
