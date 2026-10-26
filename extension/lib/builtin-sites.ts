@@ -49,4 +49,28 @@ export const BUILTIN_SITES: Site[] = [
     matches: ['https://lunarx.to/*'],
     host: /(^|\.)lunarx\.to$/,
   },
+  {
+    id: 'twitch',
+    color: '#9146ff',
+    domain: 'twitch.tv',
+    name: 'Twitch',
+    matches: ['https://www.twitch.tv/*', 'https://m.twitch.tv/*', 'https://clips.twitch.tv/*'],
+    host: /(^|\.)twitch\.tv$/,
+  },
+  {
+    id: 'kick',
+    color: '#53fc18',
+    domain: 'kick.com',
+    name: 'Kick',
+    matches: ['https://kick.com/*'],
+    host: /(^|\.)kick\.com$/,
+  },
+  {
+    id: 'dazn',
+    color: '#f8fc00',
+    domain: 'dazn.com',
+    name: 'DAZN',
+    matches: ['https://www.dazn.com/*'],
+    host: /(^|\.)dazn\.com$/,
+  },
 ];

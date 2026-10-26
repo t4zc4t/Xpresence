@@ -6,7 +6,7 @@ It has two parts. The extension reads what's playing on the sites I switch on, a
 
 ## Sites
 
-Netflix, Apple TV, YouTube, Prime Video, JioHotstar and Lunar (anime) for now. Each one is off until I switch it on in the popup, and the extension only asks for access to a site at that point.
+Netflix, Apple TV, YouTube, Prime Video, JioHotstar, Lunar (anime), Twitch, Kick and DAZN for now. Live streams show how long the stream has been running. Each one is off until I switch it on in the popup, and the extension only asks for access to a site at that point.
 
 ## What I can control
 

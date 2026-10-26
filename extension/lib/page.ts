@@ -69,6 +69,13 @@ export function seasonEpisode(t: string | undefined): { season?: number; episode
   return ep ? { episode: Number(ep[1]) } : {};
 }
 
+// "1:02:03" or "12:34" to seconds
+export function clockToSeconds(t: string | undefined): number | undefined {
+  const m = t?.match(/(?:(\d+):)?(\d{1,2}):(\d{2})/);
+  if (!m) return undefined;
+  return Number(m[1] ?? 0) * 3600 + Number(m[2]) * 60 + Number(m[3]);
+}
+
 // strip things like " | Netflix" or " - Apple TV" from page titles
 export function cleanTitle(t: string | undefined, ...brands: string[]): string | undefined {
   if (!t) return undefined;

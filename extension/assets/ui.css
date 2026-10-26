@@ -227,10 +227,6 @@ a {
   filter: none;
 }
 
-.mono[style*='#f5f5f7'] {
-  color: #111;
-}
-
 .tname {
   font-weight: 600;
   font-size: 13px;

@@ -6,7 +6,7 @@ import { BRIDGE_VERSION, RELEASES_URL, bridgeDownload, olderThan } from '@/lib/c
 import { getSettings, saveSettings, siteConf, type Settings } from '@/lib/settings';
 import { SITES, siteById } from '@/lib/sites';
 import type { Status, UiMessage, UpdateInfo } from '@/lib/types';
-import { bg, cat, clock, el, siteTiles } from '@/lib/ui';
+import { bg, cat, clock, el, monogram, siteTiles } from '@/lib/ui';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const send = (msg: UiMessage) => browser.runtime.sendMessage(msg).catch(() => {});
@@ -84,9 +84,8 @@ function emptyCard(): HTMLElement {
   if (on.length && settings.enabled && !snoozed()) {
     const row = el('div', { className: 'onsites', title: 'Sites you share' });
     for (const s of on) {
-      const m = el('span', { className: 'mono', textContent: s.name.charAt(0), title: s.name });
-      m.style.setProperty('--c', s.color ?? 'var(--raise)');
-      if (s.color === '#f5f5f7') m.style.color = '#111';
+      const m = monogram(s);
+      m.title = s.name;
       row.append(m);
     }
     card.append(row);
@@ -116,7 +115,7 @@ function mediaCard(): HTMLElement {
     art.append(badge);
   }
 
-  const line = shown.hidden ? 'Title hidden on Discord' : m.kind === 'live' ? 'Live' : episodeLine(m);
+  const line = shown.hidden ? 'Title hidden on Discord' : m.kind === 'live' ? (m.subtitle ? `Live · ${m.subtitle}` : 'Live') : episodeLine(m);
   card.append(
     el(
       'div',
