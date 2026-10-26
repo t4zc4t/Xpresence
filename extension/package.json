@@ -1,6 +1,6 @@
 {
   "name": "xpresence",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": true,
   "description": "Show what you're watching on Discord, with per-site control",
   "license": "MIT",

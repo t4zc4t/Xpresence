@@ -59,7 +59,7 @@ describe('buildActivity', () => {
 
   it('ignores non https images and links', () => {
     const a = buildActivity({ ...show, poster: 'http://x.test/a.jpg', siteIcon: undefined, url: 'javascript:alert(1)' }, settings);
-    expect(a.assets?.large_image).toBe('https://raw.githubusercontent.com/t4zc4t/Xpresence/main/extension/public/sites/netflix.png');
+    expect(a.assets?.large_image).toBe('https://raw.githubusercontent.com/t4zc4t/Xpresence/main/extension/public/sites/netflix.png?v=2');
     expect(a.details_url).toBeUndefined();
     expect(a.buttons).toBeUndefined();
   });
