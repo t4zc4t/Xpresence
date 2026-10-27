@@ -11,7 +11,8 @@ export interface Site {
   domain: string;
   // tile colour in the popup
   color?: string;
-  // tile file for Discord, give it a new name when the image changes since Discord caches by link
+  // our own copy of the logo, only for sites that block Discord from loading theirs
+  // give it a new name when the image changes, Discord caches by link
   logo?: string;
 }
 
@@ -42,15 +43,15 @@ export function siteForHost(host: string): Site | undefined {
   return SITES.find((s) => s.host.test(host));
 }
 
-// Discord loads images itself and some sites block it, so built-in sites use tiles from this repo
+// Discord loads images itself and a few sites block it, those use a logo copy from this repo
 const TILES = 'https://raw.githubusercontent.com/t4zc4t/Xpresence/main/extension/public/sites';
 
 export function hostedLogo(site: Site | undefined): string | undefined {
   const builtin = BUILTIN_SITES.find((s) => s.id === site?.id);
-  return builtin ? `${TILES}/${builtin.logo ?? `${builtin.id}.png`}` : undefined;
+  return builtin?.logo ? `${TILES}/${builtin.logo}` : undefined;
 }
 
-// last resort for sites without a tile
+// for sites whose page only has an .ico, which Discord can't show
 export function siteLogo(site: Site): string {
   return `https://www.google.com/s2/favicons?domain=${site.domain}&sz=256`;
 }

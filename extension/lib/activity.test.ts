@@ -59,9 +59,14 @@ describe('buildActivity', () => {
 
   it('ignores non https images and links', () => {
     const a = buildActivity({ ...show, poster: 'http://x.test/a.jpg', siteIcon: undefined, url: 'javascript:alert(1)' }, settings);
-    expect(a.assets?.large_image).toBe('https://raw.githubusercontent.com/t4zc4t/Xpresence/main/extension/public/sites/netflix.png');
+    expect(a.assets?.large_image).toContain('favicons?domain=netflix.com');
     expect(a.details_url).toBeUndefined();
     expect(a.buttons).toBeUndefined();
+  });
+
+  it("uses the site's own icon", () => {
+    const a = buildActivity({ ...show, poster: 'https://x.test/p.jpg' }, settings);
+    expect(a.assets?.small_image).toBe('https://www.netflix.com/icon.png');
   });
 
   it('can drop the newer fields', () => {
