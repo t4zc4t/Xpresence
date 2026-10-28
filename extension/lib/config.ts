@@ -8,7 +8,7 @@ export const RELEASES_URL = 'https://github.com/t4zc4t/Xpresence/releases/latest
 export const LATEST_API = 'https://api.github.com/repos/t4zc4t/Xpresence/releases/latest';
 
 // the bridge this build expects, older ones get an update prompt
-export const BRIDGE_VERSION = '0.2.0';
+export const BRIDGE_VERSION = '0.3.0';
 
 export function bridgeDownload(): { label: string; url: string }[] {
   const base = `${RELEASES_URL}/download`;

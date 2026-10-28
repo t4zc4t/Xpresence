@@ -18,6 +18,16 @@ interface TabState {
   media: Media;
   at: number;
   pausedSince?: number;
+  // from a desktop app, not a browser tab
+  app?: boolean;
+}
+
+// the Apple TV app gets a fake tab id
+const APP_TAB = -1;
+const IS_WINDOWS = navigator.userAgent.includes('Windows');
+
+function appMedia(title: string): Media {
+  return { site: 'appletv', kind: 'video', title, subtitle: 'Apple TV app', playing: true, url: 'https://tv.apple.com/' };
 }
 
 export default defineBackground(() => {
@@ -38,6 +48,7 @@ export default defineBackground(() => {
   let showing: Status['showing'] = null;
   let reason: string | undefined;
 
+  let watchingApps = false;
   let decideTimer: ReturnType<typeof setTimeout> | undefined;
   let pushTimer: ReturnType<typeof setTimeout> | undefined;
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -92,6 +103,12 @@ export default defineBackground(() => {
         publish();
         return;
       }
+      if (msg?.type === 'app') {
+        if (watchingApps && msg.title) tabs.set(APP_TAB, { media: appMedia(msg.title), at: Date.now(), app: true });
+        else tabs.delete(APP_TAB);
+        scheduleDecide();
+        return;
+      }
       if (msg?.type !== 'status') return;
       version = msg.version ?? undefined;
       bridge = 'connected';
@@ -125,10 +142,17 @@ export default defineBackground(() => {
       publish();
       // try again later if there's still something to show
       clearTimeout(retryTimer);
-      retryTimer = setTimeout(() => wanted && push(), bridge === 'missing' ? RETRY * 4 : RETRY);
+      retryTimer = setTimeout(
+        () => {
+          if (watchingApps) void syncApps();
+          else if (wanted) push();
+        },
+        bridge === 'missing' ? RETRY * 4 : RETRY,
+      );
     });
 
     port.postMessage({ type: 'hello', clientId: DISCORD_CLIENT_ID });
+    if (watchingApps) port.postMessage({ type: 'apps', appletv: true });
     publish();
     return port;
   };
@@ -152,7 +176,7 @@ export default defineBackground(() => {
       if (sent && port) port.postMessage({ type: 'clear' });
       sent = null;
       clearTimeout(idleTimer);
-      idleTimer = setTimeout(closePort, IDLE_CLOSE);
+      idleTimer = setTimeout(idleClose, IDLE_CLOSE);
       return;
     }
     clearTimeout(idleTimer);
@@ -178,7 +202,7 @@ export default defineBackground(() => {
     if (p) p.postMessage({ type: 'ping' });
     if (!wanted) {
       clearTimeout(idleTimer);
-      idleTimer = setTimeout(closePort, IDLE_CLOSE);
+      idleTimer = setTimeout(idleClose, IDLE_CLOSE);
     }
   };
 
@@ -208,17 +232,45 @@ export default defineBackground(() => {
     }
   };
 
+  // keep the helper open while it watches desktop apps
+  const idleClose = () => {
+    if (!watchingApps) closePort();
+  };
+
+  const syncApps = async () => {
+    const s = await getSettings();
+    const want = IS_WINDOWS && s.enabled && s.apps.appletv;
+    if (want) {
+      watchingApps = true;
+      openPort()?.postMessage({ type: 'apps', appletv: true });
+      return;
+    }
+    if (watchingApps && port) port.postMessage({ type: 'apps', appletv: false });
+    watchingApps = false;
+    if (tabs.delete(APP_TAB)) scheduleDecide();
+    if (!wanted) {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(idleClose, IDLE_CLOSE);
+    }
+  };
+
   // --- choosing what to show ---
 
   const pick = async (s: Settings): Promise<[number, TabState] | undefined> => {
     const now = Date.now();
-    const live = [...tabs].filter(([, t]) => now - t.at < STALE && s.sites[t.media.site]?.on);
+    const live = [...tabs].filter(
+      ([, t]) => now - t.at < STALE && (t.app ? s.apps.appletv : s.sites[t.media.site]?.on),
+    );
 
-    const playing = live.filter(([, t]) => t.media.playing);
+    // browser tabs come first, the desktop app only when nothing plays in the browser
+    const playing = live.filter(([, t]) => t.media.playing && !t.app);
     if (playing.length) {
       const [active] = await browser.tabs.query({ active: true, lastFocusedWindow: true });
       return playing.find(([id]) => id === active?.id) ?? playing.sort((a, b) => b[1].at - a[1].at)[0];
     }
+
+    const app = live.find(([, t]) => t.app);
+    if (app) return app;
 
     const keep = s.pausedMinutes * 60_000;
     return live
@@ -234,7 +286,7 @@ export default defineBackground(() => {
 
     if (!s.enabled) reason = 'Sharing is switched off';
     else if (s.snoozeUntil > now) reason = 'snoozed';
-    else if (!SITES.some((site) => siteConf(s, site.id).on)) reason = 'No sites switched on yet';
+    else if (!SITES.some((site) => siteConf(s, site.id).on) && !s.apps.appletv) reason = 'No sites switched on yet';
     else {
       const chosen = await pick(s);
       if (chosen) {
@@ -332,6 +384,7 @@ export default defineBackground(() => {
   browser.storage.onChanged.addListener((changes, area) => {
     if (area === 'sync' && changes.settings) {
       void syncScripts();
+      void syncApps();
       scheduleDecide();
     }
   });
@@ -360,6 +413,7 @@ export default defineBackground(() => {
   browser.runtime.setUninstallURL('https://github.com/t4zc4t/Xpresence#removing-it').catch(() => {});
   browser.runtime.onStartup.addListener(() => void syncScripts());
   void syncScripts();
+  void syncApps();
   void checkUpdate();
   publish();
 });

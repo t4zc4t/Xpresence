@@ -153,7 +153,8 @@ function mediaCard(): HTMLElement {
     if (t?.windowId != null) await browser.windows.update(t.windowId, { focused: true });
     window.close();
   };
-  actions.append(open);
+  // desktop apps have no tab to jump to
+  if (shown.tabId >= 0) actions.append(open);
   if (!shown.hidden) {
     const hide = el('button', { className: 'btn', type: 'button', textContent: 'Keep this one private' });
     hide.title = 'Adds it to your private titles, so Discord only shows the site';
@@ -338,6 +339,7 @@ function renderSettings() {
       el('span', {}, 'Xpresence', el('small', { textContent: versionText })),
       hasUpdate() ? el('a', { className: 'btn primary', href: release!.url ?? RELEASES_URL, target: '_blank', textContent: 'Get update' }) : check,
     ),
+    navigator.userAgent.includes('Windows') ? appRow() : '',
     el(
       'label',
       { className: 'set' },
@@ -370,6 +372,28 @@ function renderSettings() {
         removeAll,
       ),
     ),
+  );
+}
+
+// the Apple TV app for Windows, read by the helper
+function appRow(): HTMLElement {
+  const input = el('input', { type: 'checkbox', checked: settings.apps.appletv });
+  input.onchange = () => update((s) => (s.apps = { ...s.apps, appletv: input.checked }));
+  const old = status?.bridge === 'connected' && olderThan(status.version, BRIDGE_VERSION);
+  return el(
+    'label',
+    { className: 'set' },
+    el(
+      'span',
+      {},
+      'Apple TV app',
+      el('small', {
+        textContent: old
+          ? 'Needs the newest helper app, see the Now tab'
+          : 'Shares what plays in the Windows app, only while the browser is open',
+      }),
+    ),
+    el('span', { className: 'switch' }, input, el('span', { className: 'track' })),
   );
 }
 

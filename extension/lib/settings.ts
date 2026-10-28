@@ -16,6 +16,8 @@ export interface Settings {
   snoozeUntil: number;
   // titles that are never shared by name
   blocklist: string[];
+  // desktop apps read by the helper (Windows only)
+  apps: { appletv: boolean };
 }
 
 export const DEFAULTS: Settings = {
@@ -28,6 +30,7 @@ export const DEFAULTS: Settings = {
   pausedMinutes: 5,
   snoozeUntil: 0,
   blocklist: [],
+  apps: { appletv: false },
 };
 
 export function merge(saved: Partial<Settings> | undefined): Settings {
