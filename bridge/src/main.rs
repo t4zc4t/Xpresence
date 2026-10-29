@@ -1,3 +1,4 @@
+mod apps;
 mod discord;
 mod install;
 mod native;
@@ -7,10 +8,14 @@ use serde_json::{Value, json};
 use std::io::{self, Write};
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
+// how often the loop wakes up on its own (app titles are checked then)
+const TICK: Duration = Duration::from_secs(5);
 // how often to look for Discord again while it's closed
 const RETRY: Duration = Duration::from_secs(10);
+// resend an unchanged app title this often so the extension knows it's still there
+const APP_HEARTBEAT: Duration = Duration::from_secs(30);
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -145,12 +150,18 @@ fn host() {
     let mut out = io::stdout().lock();
     let mut b = Bridge { client_id: None, discord: None, wanted: None, error: None };
     let mut last_sent = Value::Null;
+    let mut last_retry = Instant::now();
+
+    // desktop apps, only watched while the extension asks for it
+    let mut watch_apple_tv = false;
+    let mut app_title: Option<String> = None;
+    let mut app_sent: Option<Instant> = None;
 
     loop {
         let mut dirty = false;
         let mut force = false;
 
-        match rx.recv_timeout(RETRY) {
+        match rx.recv_timeout(TICK) {
             Ok(Some(msg)) => match msg["type"].as_str() {
                 Some("hello") => {
                     let id = msg["clientId"].as_str().map(str::to_string);
@@ -174,6 +185,10 @@ fn host() {
                     b.check_discord();
                     force = true;
                 }
+                Some("apps") => {
+                    watch_apple_tv = msg["appletv"].as_bool().unwrap_or(false);
+                    app_sent = None;
+                }
                 Some("uninstall") => {
                     if let Some(d) = b.discord.as_mut() {
                         let _ = d.set_activity(None);
@@ -189,12 +204,27 @@ fn host() {
             },
             Ok(None) | Err(RecvTimeoutError::Disconnected) => break,
             Err(RecvTimeoutError::Timeout) => {
-                dirty = b.discord.is_none() && b.wanted.is_some();
+                if b.discord.is_none() && b.wanted.is_some() && last_retry.elapsed() >= RETRY {
+                    dirty = true;
+                    last_retry = Instant::now();
+                }
             }
         }
 
         if dirty {
             b.apply();
+        }
+
+        if watch_apple_tv {
+            let title = apps::apple_tv();
+            if title != app_title || app_sent.is_none_or(|t| t.elapsed() >= APP_HEARTBEAT) {
+                let msg = json!({ "type": "app", "id": "appletv", "title": title });
+                if native::write(&mut out, &msg).is_err() {
+                    break;
+                }
+                app_title = title;
+                app_sent = Some(Instant::now());
+            }
         }
 
         let status = b.status();
