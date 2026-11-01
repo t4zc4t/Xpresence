@@ -313,36 +313,52 @@ export default defineBackground(() => {
 
   const scriptId = (id: string) => `watch-${id}`;
 
-  const syncScripts = async () => {
+  // Brave can ask for this several times at once on startup, so run one at a time
+  let syncing: Promise<void> = Promise.resolve();
+  const syncScripts = () => {
+    syncing = syncing.then(registerScripts, registerScripts);
+    return syncing;
+  };
+
+  const registerScripts = async () => {
     const s = await getSettings();
     const registered = new Set((await browser.scripting.getRegisteredContentScripts()).map((c) => c.id));
 
     for (const site of SITES) {
-      const id = scriptId(site.id);
-      const allowed = await browser.permissions.contains({ origins: site.matches });
-      const want = siteConf(s, site.id).on && allowed;
-
-      if (want && !registered.has(id)) {
-        await browser.scripting.registerContentScripts([
-          {
-            id,
-            js: ['content-scripts/watcher.js'],
-            matches: site.matches,
-            runAt: 'document_idle',
-            persistAcrossSessions: true,
-          },
-        ]);
-        // tabs that were already open
-        const open = await browser.tabs.query({ url: site.matches });
-        for (const tab of open) {
-          if (tab.id == null || tab.incognito) continue;
-          browser.scripting
-            .executeScript({ target: { tabId: tab.id }, files: ['/content-scripts/watcher.js'] })
-            .catch(() => {});
-        }
-      } else if (!want && registered.has(id)) {
-        await browser.scripting.unregisterContentScripts({ ids: [id] });
+      try {
+        await syncSite(site, s, registered);
+      } catch (e) {
+        // one site failing shouldn't stop the rest
+        console.warn(`Xpresence: could not set up ${site.name}`, e);
       }
+    }
+  };
+
+  const syncSite = async (site: (typeof SITES)[number], s: Settings, registered: Set<string>) => {
+    const id = scriptId(site.id);
+    const allowed = await browser.permissions.contains({ origins: site.matches });
+    const want = siteConf(s, site.id).on && allowed;
+
+    if (want && !registered.has(id)) {
+      await browser.scripting.registerContentScripts([
+        {
+          id,
+          js: ['content-scripts/watcher.js'],
+          matches: site.matches,
+          runAt: 'document_idle',
+          persistAcrossSessions: true,
+        },
+      ]);
+      // tabs that were already open
+      const open = await browser.tabs.query({ url: site.matches });
+      for (const tab of open) {
+        if (tab.id == null || tab.incognito) continue;
+        browser.scripting
+          .executeScript({ target: { tabId: tab.id }, files: ['/content-scripts/watcher.js'] })
+          .catch(() => {});
+      }
+    } else if (!want && registered.has(id)) {
+      await browser.scripting.unregisterContentScripts({ ids: [id] });
     }
   };
 
