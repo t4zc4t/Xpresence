@@ -3,6 +3,7 @@ import { defineBackground } from 'wxt/utils/define-background';
 import { basicActivity, buildActivity, sameActivity, shouldHide, type Activity } from '@/lib/activity';
 import { BRIDGE_HOST, DISCORD_CLIENT_ID, LATEST_API } from '@/lib/config';
 import { getSettings, saveSettings, siteConf, type Settings } from '@/lib/settings';
+import { posterFor } from '@/lib/posters';
 import { SITES } from '@/lib/sites';
 import type { BridgeState, ContentMessage, Media, Status, UiMessage, UpdateInfo } from '@/lib/types';
 
@@ -104,8 +105,19 @@ export default defineBackground(() => {
         return;
       }
       if (msg?.type === 'app') {
-        if (watchingApps && msg.title) tabs.set(APP_TAB, { media: appMedia(msg.title), at: Date.now(), app: true });
-        else tabs.delete(APP_TAB);
+        if (watchingApps && msg.title) {
+          const title: string = msg.title;
+          const poster = tabs.get(APP_TAB)?.media.title === title ? tabs.get(APP_TAB)?.media.poster : undefined;
+          tabs.set(APP_TAB, { media: { ...appMedia(title), poster }, at: Date.now(), app: true });
+          if (!poster) {
+            posterFor(title).then((url) => {
+              const now = tabs.get(APP_TAB);
+              if (!url || now?.media.title !== title) return;
+              now.media = { ...now.media, poster: url };
+              scheduleDecide();
+            });
+          }
+        } else tabs.delete(APP_TAB);
         scheduleDecide();
         return;
       }

@@ -21,7 +21,8 @@ export default defineConfig({
     key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkv6NHAgjJ+PDZ2TsoBEHDUrtjSFv2WLaFBgLalZ1i0rr68Kxp+nV9PG/piODtqlhkWVsear/MfAmFZbUOmI+HHYsjBRWVGDbBTsl36mwbhKnQE+93vlC7wDRLdROZUtien9nvNZUSKdyOi7E2K/IfaEYrQpl4qdnf+h/YIQmj6q/Bl+/kiWJ6NoKJVP1B4jAkidQnGCeJHiW4/bKU3er479hYMCcvinW08OvHuF3O8tTTn0s2+CcYB5lU9mF1WmRDtB8nGtSCA8wha4WGf+AyaFRoIWoXVOWFsb+AckFWntxRiUp/1osBPTp5B+8cwXmhcdQXGxvskSEgo5J5Jge9QIDAQAB',
     permissions: ['storage', 'nativeMessaging', 'scripting', 'alarms'],
     // asked for one site at a time, only when it's switched on
-    optional_host_permissions: ALL_MATCHES,
+    // plus Apple's catalogue, for Apple TV app posters
+    optional_host_permissions: [...ALL_MATCHES, 'https://itunes.apple.com/*'],
     incognito: 'not_allowed',
     minimum_chrome_version: '120',
   },
