@@ -380,7 +380,7 @@ function renderSettings() {
 function appRow(): HTMLElement {
   const input = el('input', { type: 'checkbox', checked: settings.apps.appletv });
   input.onchange = () => {
-    // for the poster, the lookup sends only the title to Apple; without it the card keeps the logo
+    // for posters, looked up by title on Apple TV; without it the card keeps the logo
     if (input.checked) browser.permissions.request({ origins: [POSTER_ORIGIN] }).catch(() => {});
     update((s) => (s.apps = { ...s.apps, appletv: input.checked }));
   };
