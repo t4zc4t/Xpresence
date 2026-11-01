@@ -4,6 +4,7 @@ import { browser } from 'wxt/browser';
 import { episodeLine } from '@/lib/activity';
 import { BRIDGE_VERSION, RELEASES_URL, bridgeDownload, olderThan } from '@/lib/config';
 import { getSettings, saveSettings, siteConf, type Settings } from '@/lib/settings';
+import { POSTER_ORIGIN } from '@/lib/posters';
 import { SITES, siteById } from '@/lib/sites';
 import type { Status, UiMessage, UpdateInfo } from '@/lib/types';
 import { bg, cat, clock, el, monogram, siteTiles } from '@/lib/ui';
@@ -378,7 +379,11 @@ function renderSettings() {
 // the Apple TV app for Windows, read by the helper
 function appRow(): HTMLElement {
   const input = el('input', { type: 'checkbox', checked: settings.apps.appletv });
-  input.onchange = () => update((s) => (s.apps = { ...s.apps, appletv: input.checked }));
+  input.onchange = () => {
+    // for posters, looked up by title on Apple TV; without it the card keeps the logo
+    if (input.checked) browser.permissions.request({ origins: [POSTER_ORIGIN] }).catch(() => {});
+    update((s) => (s.apps = { ...s.apps, appletv: input.checked }));
+  };
   const old = status?.bridge === 'connected' && olderThan(status.version, BRIDGE_VERSION);
   return el(
     'label',
